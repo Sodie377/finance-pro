@@ -10,17 +10,18 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <aside className="w-64 bg-gray-900 h-screen fixed left-0 top-0 text-white p-6 shadow-xl z-20">
+    <aside className="w-64 bg-gray-900 h-screen fixed left-0 top-0 text-white shadow-xl z-20 flex flex-col p-6">
       
-      {/* TOPO DA SIDEBAR: LOGO E NOME AQUI */}
-      <div className="flex items-center gap-3 mb-10">
-        <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" /> 
-        <span className="text-xl font-black tracking-tighter text-emerald-400 uppercase">
-          FINANCE PRO
-        </span>
+      {/* LOGO CENTRALIZADA COM O NOME CORRETO DO ARQUIVO */}
+      <div className="flex justify-center mb-10">
+        <img 
+          src="/logofinancepro.png" 
+          alt="Finance PRO" 
+          className="h-16 w-auto object-contain" 
+        /> 
       </div>
 
-      <nav className="space-y-2">
+      <nav className="space-y-2 flex-1">
         {menu.map((item) => (
           <button
             key={item.id}
