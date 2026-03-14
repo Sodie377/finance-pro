@@ -21,7 +21,7 @@ const ExtratoVendas = ({ lista }) => {
           <tbody className="divide-y divide-gray-100">
             {lista.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                <td className="p-4 font-medium">{new Date(venda.data_referencia + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                <td className="p-4 font-medium">{new Date(item.data_referencia + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
                 <td className="p-4 text-green-600">R$ {item.dinheiro.toFixed(2)}</td>
                 <td className="p-4 text-emerald-600">R$ {item.pix.toFixed(2)}</td>
                 <td className="p-4 text-red-500">R$ {(item.ifood + item.keeta).toFixed(2)}</td>
