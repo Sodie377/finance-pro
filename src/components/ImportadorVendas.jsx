@@ -21,19 +21,26 @@ const ImportadorVendas = ({ onSucesso }) => {
       const worksheet = workbook.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(worksheet);
 
-      setProgresso('Agrupando 2.500+ linhas...');
+      setProgresso('Agrupando linhas...');
 
       const agrupadoPorData = rows.reduce((acc, linha) => {
         const dataOriginal = linha.DATA;
+        // Pula linhas sem data ou vazias
         if (!dataOriginal) return acc;
 
         let dataFormatada;
-        if (typeof dataOriginal === 'number') {
-          dataFormatada = new Date((dataOriginal - 25569) * 86400 * 1000).toISOString().split('T')[0];
-        } else {
-          const partes = String(dataOriginal).split('/');
-          dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`;
-        }
+        try {
+          if (typeof dataOriginal === 'number') {
+            const baseDate = new Date((dataOriginal - 25569) * 86400 * 1000);
+            dataFormatada = baseDate.toISOString().split('T')[0];
+          } else {
+            const partes = String(dataOriginal).trim().split('/');
+            if (partes.length !== 3) return acc;
+            dataFormatada = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+          }
+          // Validação extra de segurança para a data
+          if (isNaN(new Date(dataFormatada).getTime()) || dataFormatada.includes('NaN')) return acc;
+        } catch (e) { return acc; }
 
         if (!acc[dataFormatada]) {
           acc[dataFormatada] = {
@@ -45,26 +52,26 @@ const ImportadorVendas = ({ onSucesso }) => {
 
         const tipo = String(linha['TIPO DE VENDA'] || '').toUpperCase().trim();
         
-        // --- LÓGICA DE VALOR CORRIGIDA ---
-        let valorRaw = String(linha.VALOR || '0').replace('R$', '').replace(/\s/g, '').trim();
+        // --- TRATAMENTO DE VALOR (IGNORA BRANCOS) ---
+        let valorRaw = String(linha.VALOR || '').replace('R$', '').replace(/\s/g, '').trim();
         
-        let valor;
-        // Se o valor tem vírgula e ponto (ex: 1.250,50), removemos o ponto e trocamos a vírgula
+        // Se estiver vazio, o valor é zero
+        if (valorRaw === '' || valorRaw === '-') {
+          return acc; 
+        }
+
+        let valor = 0;
         if (valorRaw.includes(',') && valorRaw.includes('.')) {
           valor = parseFloat(valorRaw.replace(/\./g, '').replace(',', '.'));
-        } 
-        // Se só tem vírgula (ex: 783,60), trocamos por ponto
-        else if (valorRaw.includes(',')) {
+        } else if (valorRaw.includes(',')) {
           valor = parseFloat(valorRaw.replace(',', '.'));
-        } 
-        // Se já for formato limpo (ex: 783.60)
-        else {
+        } else {
           valor = parseFloat(valorRaw);
         }
         
         if (isNaN(valor)) valor = 0;
-        // --------------------------------
 
+        // Mapeamento
         if (tipo.includes('DINHEIRO') || tipo.includes('BOLOS')) acc[dataFormatada].dinheiro += valor;
         else if (tipo.includes('DÉBITO')) acc[dataFormatada].debito += valor;
         else if (tipo.includes('CRÉDITO')) acc[dataFormatada].credito += valor;
@@ -78,22 +85,19 @@ const ImportadorVendas = ({ onSucesso }) => {
       }, {});
 
       const listaParaInserir = Object.values(agrupadoPorData);
-      setProgresso(`Enviando ${listaParaInserir.length} dias para o banco...`);
-
+      
       try {
         const tamanhoLote = 50;
         for (let i = 0; i < listaParaInserir.length; i += tamanhoLote) {
           const lote = listaParaInserir.slice(i, i + tamanhoLote);
           const { error } = await supabase.from('faturamento_diario').insert(lote);
           if (error) throw error;
-          setProgresso(`Enviado: ${Math.min(i + tamanhoLote, listaParaInserir.length)} de ${listaParaInserir.length} dias`);
+          setProgresso(`Enviado: ${Math.min(i + tamanhoLote, listaParaInserir.length)} dias`);
         }
-
         alert("🚀 Importação concluída com sucesso!");
         if (onSucesso) onSucesso();
       } catch (error) {
-        console.error(error);
-        alert("❌ Erro ao importar: " + error.message);
+        alert("❌ Erro ao enviar: " + error.message);
       } finally {
         setLoading(false);
         setProgresso('');
@@ -105,9 +109,8 @@ const ImportadorVendas = ({ onSucesso }) => {
   return (
     <div className="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-dashed border-emerald-200 text-center my-6">
       <h3 className="text-lg font-black text-emerald-800 uppercase tracking-tighter mb-2">Importar Histórico de Vendas</h3>
-      <p className="text-sm text-emerald-600 mb-6 font-medium">Use sua planilha limpa (Sem as linhas 1 e 2 do Excel)</p>
-      
-      <label className={`px-8 py-3 rounded-2xl font-bold cursor-pointer transition-all shadow-lg inline-block ${loading ? 'bg-gray-400 text-white' : 'bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700'}`}>
+      <p className="text-sm text-emerald-600 mb-6 font-medium">Planilha de 2.500 linhas detectada. Processando...</p>
+      <label className={`px-8 py-3 rounded-2xl font-bold cursor-pointer transition-all shadow-lg inline-block ${loading ? 'bg-gray-400 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
         {loading ? progresso : 'Selecionar Arquivo Excel'}
         <input type="file" accept=".xlsx, .xls" onChange={processarPlanilha} className="hidden" disabled={loading} />
       </label>
