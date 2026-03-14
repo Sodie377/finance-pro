@@ -145,6 +145,39 @@ function App() {
 
             <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
 
+            {/* =============================================================
+                AQUI ENTRA O NOVO CARD DE TOTAL PARA VENDAS E GASTOS 
+                ============================================================= */}
+            {activeTab !== 'dash' && (
+              <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className={`p-6 rounded-[2.5rem] shadow-sm border-l-8 flex items-center justify-between ${
+                  activeTab === 'vendas' ? 'bg-emerald-50 border-emerald-500' : 
+                  activeTab === 'gastos_biz' ? 'bg-red-50 border-red-500' : 'bg-purple-50 border-purple-500'
+                }`}>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">
+                      Total do Período ({activeTab === 'vendas' ? 'Bruto' : 'Despesas'})
+                    </p>
+                    <p className={`text-3xl font-black font-mono ${
+                      activeTab === 'vendas' ? 'text-emerald-700' : 
+                      activeTab === 'gastos_biz' ? 'text-red-700' : 'text-purple-700'
+                    }`}>
+                      {activeTab === 'vendas' 
+                        ? formatarMoeda(totalBruto) 
+                        : activeTab === 'gastos_biz' 
+                          ? formatarMoeda(totalLoja) 
+                          : formatarMoeda(totalPessoal)
+                      }
+                    </p>
+                  </div>
+                  <div className="text-4xl opacity-20">
+                    {activeTab === 'vendas' ? '💰' : activeTab === 'gastos_biz' ? '🏢' : '🏠'}
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* ============================================================= */}
+
             {activeTab === 'dash' && (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-8">
@@ -192,7 +225,6 @@ function App() {
             )}
           </>
         )}
-
         <ModalVenda 
           isOpen={isModalVendaOpen} 
           onClose={() => setIsModalVendaOpen(false)} 
