@@ -90,7 +90,12 @@ function App() {
       return accTotal + liquidoDia;
     }, 0);
   };
-
+  const formatarMoeda = (valor) => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(valor || 0);
+};
   const totalBruto = vendas.reduce((acc, v) => acc + (v.valor_bruto || 0), 0)
   const totalLiquido = calcularTotalLiquido();
   const totalLoja = gastos.filter(g => g.tipo === 'Loja').reduce((acc, g) => acc + (g.valor || 0), 0)
