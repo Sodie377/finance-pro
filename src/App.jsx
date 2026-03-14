@@ -3,7 +3,7 @@ import Sidebar from './components/sidebar'
 import ModalVenda from './components/modals/ModalVenda'
 import ModalGasto from './components/modals/ModalGasto'
 import ExtratoVendas from './components/ExtratoVendas'
-import ExtratoGastos from './components/ExtratoGastos' // Importado!
+import ExtratoGastos from './components/ExtratoGastos'
 import FiltroData from './components/FiltroData'
 import ConfigTaxas from './components/ConfigTaxas'
 import { supabase } from './services/supabase'
@@ -12,7 +12,7 @@ import Exportador from './components/Exportador'
 import CadastroFornecedores from './components/CadastroFornecedores'
 import GraficoDespesas from './components/GraficoDespesas'
 import ImportadorVendas from './components/ImportadorVendas'
-import ImportadorGastos from './components/ImportadorGastos';
+import ImportadorGastos from './components/ImportadorGastos'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dash')
@@ -42,15 +42,9 @@ function App() {
       queryVendas = queryVendas.eq('data_referencia', hojeStr);
       queryGastos = queryGastos.eq('data', hojeStr);
     } else if (filtro === 'personalizado') {
-  // Garantimos que a data final seja considerada até o último segundo do dia
-  queryVendas = queryVendas
-    .gte('data_referencia', customDatas.inicio)
-    .lte('data_referencia', customDatas.fim);
-    
-  queryGastos = queryGastos
-    .gte('data', customDatas.inicio)
-    .lte('data', customDatas.fim);
-} else if (filtro === '7dias') {
+      queryVendas = queryVendas.gte('data_referencia', customDatas.inicio).lte('data_referencia', customDatas.fim);
+      queryGastos = queryGastos.gte('data', customDatas.inicio).lte('data', customDatas.fim);
+    } else if (filtro === '7dias') {
       const seteDiasAtras = new Date();
       seteDiasAtras.setDate(hoje.getDate() - 7);
       const dataStr = seteDiasAtras.toISOString().split('T')[0];
@@ -71,26 +65,26 @@ function App() {
 
   useEffect(() => { atualizarDados(); }, [filtro, customDatas]);
 
+  // LÓGICA DE CÁLCULO LÍQUIDO AJUSTADA PARA VÍNCULOS
   const calcularTotalLiquido = () => {
     return vendas.reduce((accTotal, dia) => {
       let liquidoDia = 0;
-      const colunas = [
-        { campo: 'dinheiro', nome: 'Dinheiro' },
-        { campo: 'debito', nome: 'Debito' },
-        { campo: 'credito', nome: 'Credito' },
-        { campo: 'pix', nome: 'Pix' },
-        { campo: 'pix_ecommerce', nome: 'Pix E-commerce' },
-        { campo: 'voucher', nome: 'Voucher' },
-        { campo: 'ifood', nome: 'iFood' },
-        { campo: 'keeta', nome: 'Keeta' },
-        { campo: 'bolos', nome: 'Bolos' }, // Adicionado!
+      
+      // Lista exata das chaves que usamos no banco de dados e no cadastro de vendas
+      const camposVenda = [
+        'dinheiro', 'debito', 'credito', 'pix', 
+        'pix_ecommerce', 'voucher', 'ifood', 'keeta', 'bolos'
       ];
 
-      colunas.forEach(col => {
-        const valorBruto = dia[col.campo] || 0;
-        const conf = taxas.find(t => t.nome_metodo.toLowerCase() === col.nome.toLowerCase());
-        if (conf) {
-          liquidoDia += valorBruto - (valorBruto * (conf.taxa_percentual / 100)) - (valorBruto > 0 ? conf.taxa_fixa : 0);
+      camposVenda.forEach(campo => {
+        const valorBruto = dia[campo] || 0;
+        
+        // BUSCA A TAXA PELO VÍNCULO (ex: vinculo === 'debito')
+        const conf = taxas.find(t => t.vinculo === campo);
+
+        if (conf && valorBruto > 0) {
+          const desconto = (valorBruto * (conf.taxa_percentual / 100)) + (conf.taxa_fixa || 0);
+          liquidoDia += (valorBruto - desconto);
         } else {
           liquidoDia += valorBruto;
         }
@@ -98,12 +92,15 @@ function App() {
       return accTotal + liquidoDia;
     }, 0);
   };
+
   const formatarMoeda = (valor) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(valor || 0);
-};
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(valor || 0);
+  };
+
+  // SOMA O BRUTO + BOLOS
   const totalBruto = vendas.reduce((acc, v) => acc + (v.valor_bruto || 0) + (v.bolos || 0), 0)
   const totalLiquido = calcularTotalLiquido();
   const totalLoja = gastos.filter(g => g.tipo === 'Loja').reduce((acc, g) => acc + (g.valor || 0), 0)
@@ -119,25 +116,20 @@ function App() {
         {activeTab === 'fornecedores' && <CadastroFornecedores />}
 
         {activeTab === 'relatorios' && (
-  <div className="space-y-6">
-    <div className="mb-10">
-      <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800">Central de Exportação</h1>
-      <p className="text-slate-400 font-medium mb-6">Gere arquivos PDF, Excel ou OFX do período selecionado.</p>
-      
-      {/* O componente agora funcionará com o import correto no topo */}
-      <ImportadorVendas onSucesso={atualizarDados} />
-      <ImportadorGastos onSucesso={atualizarDados} />
-    </div>
-    
-    <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
-    <Exportador vendas={vendas} gastos={gastos} filtro={filtro} />
-  </div>
-)}
+          <div className="space-y-6">
+            <div className="mb-10">
+              <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800">Central de Exportação</h1>
+              <p className="text-slate-400 font-medium mb-6">Gere arquivos PDF, Excel ou OFX do período selecionado.</p>
+              <ImportadorVendas onSucesso={atualizarDados} />
+              <ImportadorGastos onSucesso={atualizarDados} />
+            </div>
+            <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
+            <Exportador vendas={vendas} gastos={gastos} filtro={filtro} />
+          </div>
+        )}
 
-        {/* CONTEÚDO PRINCIPAL (DASHBOARD, VENDAS, GASTOS) */}
         {activeTab !== 'taxas' && activeTab !== 'relatorios' && activeTab !== 'fornecedores' && (
           <>
-            {/* CABEÇALHO LIMPO - SEM O TÍTULO REPETIDO */}
             <div className="flex justify-between items-center mb-10">
               <div>
                 <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Visão Geral</p>
@@ -155,49 +147,29 @@ function App() {
 
             {activeTab === 'dash' && (
               <>
-                {/* OS 5 CARDS DE KPI */}
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-8">
                   <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-emerald-500 text-center">
-  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bruto Total</p>
-  <p className="text-xl font-black text-emerald-600 font-mono">
-    {formatarMoeda(totalBruto)}
-  </p>
-</div>
-
-{/* CARD 2: LÍQUIDO */}
-<div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-cyan-500 text-center">
-  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Líquido</p>
-  <p className="text-xl font-black text-cyan-600 font-mono">
-    {formatarMoeda(totalLiquido)}
-  </p>
-</div>
-
-{/* CARD 3: GASTOS LOJA */}
-<div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-red-500 text-center">
-  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Loja</p>
-  <p className="text-xl font-black text-red-600 font-mono">
-    {formatarMoeda(totalLoja)}
-  </p>
-</div>
-
-{/* CARD 4: GASTOS CASA */}
-<div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-purple-500 text-center">
-  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Casa</p>
-  <p className="text-xl font-black text-purple-600 font-mono">
-    {formatarMoeda(totalPessoal)}
-  </p>
-</div>
-
-{/* CARD 5: SALDO REAL */}
-<div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-blue-600 text-center">
-  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Real</p>
-  <p className={`text-xl font-black font-mono ${lucroReal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-    {formatarMoeda(lucroReal)}
-  </p>
-</div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bruto Total</p>
+                    <p className="text-xl font-black text-emerald-600 font-mono">{formatarMoeda(totalBruto)}</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-cyan-500 text-center">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Líquido</p>
+                    <p className="text-xl font-black text-cyan-600 font-mono">{formatarMoeda(totalLiquido)}</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-red-500 text-center">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Loja</p>
+                    <p className="text-xl font-black text-red-600 font-mono">{formatarMoeda(totalLoja)}</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-purple-500 text-center">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Casa</p>
+                    <p className="text-xl font-black text-purple-600 font-mono">{formatarMoeda(totalPessoal)}</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-blue-600 text-center">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Real</p>
+                    <p className={`text-xl font-black font-mono ${lucroReal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{formatarMoeda(lucroReal)}</p>
+                  </div>
                 </div>
 
-                {/* GRÁFICOS */}
                 <div className="mt-8">
                   <GraficoEvolucao vendas={vendas} taxas={taxas} />
                 </div>
@@ -221,7 +193,6 @@ function App() {
           </>
         )}
 
-        {/* MODAIS (Mantenha igual ao seu) */}
         <ModalVenda 
           isOpen={isModalVendaOpen} 
           onClose={() => setIsModalVendaOpen(false)} 
