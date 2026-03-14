@@ -41,9 +41,15 @@ function App() {
       queryVendas = queryVendas.eq('data_referencia', hojeStr);
       queryGastos = queryGastos.eq('data', hojeStr);
     } else if (filtro === 'personalizado') {
-      queryVendas = queryVendas.gte('data_referencia', customDatas.inicio).lte('data_referencia', customDatas.fim);
-      queryGastos = queryGastos.gte('data', customDatas.inicio).lte('data', customDatas.fim);
-    } else if (filtro === '7dias') {
+  // Garantimos que a data final seja considerada até o último segundo do dia
+  queryVendas = queryVendas
+    .gte('data_referencia', customDatas.inicio)
+    .lte('data_referencia', customDatas.fim);
+    
+  queryGastos = queryGastos
+    .gte('data', customDatas.inicio)
+    .lte('data', customDatas.fim);
+} else if (filtro === '7dias') {
       const seteDiasAtras = new Date();
       seteDiasAtras.setDate(hoje.getDate() - 7);
       const dataStr = seteDiasAtras.toISOString().split('T')[0];

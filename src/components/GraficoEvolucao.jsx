@@ -21,7 +21,7 @@ const GraficoEvolucao = ({ vendas, taxas }) => {
 
     vendas.forEach(dia => {
       // Formata a data para agrupar (ex: "13/03")
-      const dataObj = new Date(dia.data_referencia);
+      const dataObj = new Date(dia.data_referencia + 'T00:00:00');
       const dataFormatada = dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
       
       if (!mapa[dataFormatada]) {
