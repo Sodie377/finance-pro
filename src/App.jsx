@@ -11,6 +11,7 @@ import GraficoEvolucao from './components/GraficoEvolucao'
 import Exportador from './components/Exportador'
 import CadastroFornecedores from './components/CadastroFornecedores'
 import GraficoDespesas from './components/GraficoDespesas'
+import ImportadorVendas from './components/ImportadorVendas'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dash')
@@ -105,16 +106,19 @@ function App() {
         {activeTab === 'fornecedores' && <CadastroFornecedores />}
 
         {activeTab === 'relatorios' && (
-          <div className="space-y-6">
-            <div className="mb-10">
-              <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800">Central de Exportação</h1>
-              <p className="text-slate-400 font-medium">Gere arquivos PDF, Excel ou OFX do período selecionado.</p>
-              <ImportadorVendas onSucesso={atualizarDados} />
-            </div>
-            <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
-            <Exportador vendas={vendas} gastos={gastos} filtro={filtro} />
-          </div>
-        )}
+  <div className="space-y-6">
+    <div className="mb-10">
+      <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800">Central de Exportação</h1>
+      <p className="text-slate-400 font-medium mb-6">Gere arquivos PDF, Excel ou OFX do período selecionado.</p>
+      
+      {/* O componente agora funcionará com o import correto no topo */}
+      <ImportadorVendas onSucesso={atualizarDados} />
+    </div>
+    
+    <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
+    <Exportador vendas={vendas} gastos={gastos} filtro={filtro} />
+  </div>
+)}
 
         {/* CONTEÚDO PRINCIPAL (DASHBOARD, VENDAS, GASTOS) */}
         {activeTab !== 'taxas' && activeTab !== 'relatorios' && activeTab !== 'fornecedores' && (
