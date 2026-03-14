@@ -216,7 +216,7 @@ function App() {
               </>
             )}
 
-            {activeTab === 'vendas' && <ExtratoVendas lista={vendas} />}
+            {activeTab === 'vendas' && <ExtratoVendas lista={vendas} taxas={taxas} />}
             
             {(activeTab === 'gastos_biz' || activeTab === 'gastos_pers') && (
               <div className="space-y-4">
