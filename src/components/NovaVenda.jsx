@@ -1,10 +1,13 @@
 import React, { useState, useRef } from 'react';
 
 const NovaVenda = ({ onSalvar }) => {
+  // 1. Adicionado data_referencia e bolos no estado
   const [dados, setDados] = useState({
+    data_referencia: new Date().toISOString().split('T')[0],
     dinheiro: 0, debito: 0, credito: 0, 
     pix: 0, pix_ecommerce: 0, voucher: 0,
-    ifood: 0, keeta: 0
+    ifood: 0, keeta: 0,
+    bolos: 0 // Novo campo estratégico
   });
 
   const inputsRef = useRef([]);
@@ -16,14 +19,17 @@ const NovaVenda = ({ onSalvar }) => {
       if (nextInput) {
         nextInput.focus();
       } else {
-        // Se for o último, foca no botão de salvar em vez de salvar direto (evita erro)
         document.getElementById('btn-salvar').focus();
       }
     }
   };
 
-  const total = Object.values(dados).reduce((acc, val) => acc + val, 0);
+  // O total agora inclui os bolos automaticamente
+  const total = Object.entries(dados).reduce((acc, [key, val]) => {
+    return key === 'data_referencia' ? acc : acc + Number(val);
+  }, 0);
 
+  // 2. Campo BOLOS adicionado à lista (com cor diferenciada para controle)
   const campos = [
     { id: 'dinheiro', label: '💵 Dinheiro', color: 'focus:ring-green-500' },
     { id: 'debito', label: '💳 Débito', color: 'focus:ring-blue-500' },
@@ -33,19 +39,32 @@ const NovaVenda = ({ onSalvar }) => {
     { id: 'voucher', label: '🎟️ Voucher', color: 'focus:ring-yellow-500' },
     { id: 'ifood', label: '🛵 iFood', color: 'focus:ring-red-500' },
     { id: 'keeta', label: '🥡 Keeta', color: 'focus:ring-pink-500' },
+    { id: 'bolos', label: '🧁 Bolos (Não Decl.)', color: 'focus:ring-purple-600' },
   ];
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-2xl w-full border-t-8 border-emerald-600">
-      <div className="mb-6">
-        <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">📊 Faturamento Bruto</h2>
-        <p className="text-gray-400 text-sm font-medium">Preencha e use <kbd className="bg-gray-200 px-1 rounded text-gray-600">Enter</kbd> para navegar</p>
+      <div className="mb-6 flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">📊 Faturamento Bruto</h2>
+          <p className="text-gray-400 text-sm font-medium">Use <kbd className="bg-gray-200 px-1 rounded text-gray-600">Enter</kbd> para navegar</p>
+        </div>
+        {/* 3. Input de DATA essencial para o Supabase */}
+        <div className="flex flex-col items-end">
+          <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-widest">Data da Venda</label>
+          <input 
+            type="date"
+            className="p-2 bg-gray-100 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+            value={dados.data_referencia}
+            onChange={(e) => setDados({...dados, data_referencia: e.target.value})}
+          />
+        </div>
       </div>
       
       <div className="grid grid-cols-2 gap-x-8 gap-y-5">
         {campos.map((item, index) => (
-          <div key={item.id} className="flex flex-col">
-            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1 tracking-widest">
+          <div key={item.id} className={`flex flex-col ${item.id === 'bolos' ? 'bg-purple-50 p-3 rounded-2xl border border-purple-100' : ''}`}>
+            <label className={`text-[10px] font-bold uppercase mb-1 ml-1 tracking-widest ${item.id === 'bolos' ? 'text-purple-600' : 'text-gray-400'}`}>
               {item.label}
             </label>
             <input 
@@ -55,7 +74,7 @@ const NovaVenda = ({ onSalvar }) => {
               className={`w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none transition-all text-lg font-semibold ${item.color} focus:bg-white focus:border-current shadow-sm`}
               placeholder="0,00"
               onKeyDown={(e) => handleKeyDown(e, index)}
-              onChange={(e) => setDados({...dados, [item.id]: Number(e.target.value)})}
+              onChange={(e) => setDados({...dados, [item.id]: e.target.value === '' ? '' : Number(e.target.value)})}
             />
           </div>
         ))}

@@ -83,6 +83,7 @@ function App() {
         { campo: 'voucher', nome: 'Voucher' },
         { campo: 'ifood', nome: 'iFood' },
         { campo: 'keeta', nome: 'Keeta' },
+        { campo: 'bolos', nome: 'Bolos' }, // Adicionado!
       ];
 
       colunas.forEach(col => {
@@ -103,7 +104,7 @@ function App() {
     currency: 'BRL',
   }).format(valor || 0);
 };
-  const totalBruto = vendas.reduce((acc, v) => acc + (v.valor_bruto || 0), 0)
+  const totalBruto = vendas.reduce((acc, v) => acc + (v.valor_bruto || 0) + (v.bolos || 0), 0)
   const totalLiquido = calcularTotalLiquido();
   const totalLoja = gastos.filter(g => g.tipo === 'Loja').reduce((acc, g) => acc + (g.valor || 0), 0)
   const totalPessoal = gastos.filter(g => g.tipo === 'Pessoal').reduce((acc, g) => acc + (g.valor || 0), 0)

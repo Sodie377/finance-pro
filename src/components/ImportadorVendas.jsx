@@ -25,7 +25,6 @@ const ImportadorVendas = ({ onSucesso }) => {
 
       const agrupadoPorData = rows.reduce((acc, linha) => {
         const dataOriginal = linha.DATA;
-        // Pula linhas sem data ou vazias
         if (!dataOriginal) return acc;
 
         let dataFormatada;
@@ -38,27 +37,23 @@ const ImportadorVendas = ({ onSucesso }) => {
             if (partes.length !== 3) return acc;
             dataFormatada = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
           }
-          // Validação extra de segurança para a data
           if (isNaN(new Date(dataFormatada).getTime()) || dataFormatada.includes('NaN')) return acc;
         } catch (e) { return acc; }
 
+        // CORREÇÃO AQUI: Adicionado 'bolos: 0' no objeto inicial
         if (!acc[dataFormatada]) {
           acc[dataFormatada] = {
             data_referencia: dataFormatada,
             dinheiro: 0, debito: 0, credito: 0, pix: 0, 
-            pix_ecommerce: 0, voucher: 0, ifood: 0, keeta: 0
+            pix_ecommerce: 0, voucher: 0, ifood: 0, keeta: 0,
+            bolos: 0 
           };
         }
 
         const tipo = String(linha['TIPO DE VENDA'] || '').toUpperCase().trim();
-        
-        // --- TRATAMENTO DE VALOR (IGNORA BRANCOS) ---
         let valorRaw = String(linha.VALOR || '').replace('R$', '').replace(/\s/g, '').trim();
         
-        // Se estiver vazio, o valor é zero
-        if (valorRaw === '' || valorRaw === '-') {
-          return acc; 
-        }
+        if (valorRaw === '' || valorRaw === '-') return acc;
 
         let valor = 0;
         if (valorRaw.includes(',') && valorRaw.includes('.')) {
@@ -71,15 +66,26 @@ const ImportadorVendas = ({ onSucesso }) => {
         
         if (isNaN(valor)) valor = 0;
 
-        // Mapeamento
-        if (tipo.includes('DINHEIRO') || tipo.includes('BOLOS')) acc[dataFormatada].dinheiro += valor;
-        else if (tipo.includes('DÉBITO')) acc[dataFormatada].debito += valor;
-        else if (tipo.includes('CRÉDITO')) acc[dataFormatada].credito += valor;
-        else if (tipo.includes('PIX E-COMERCE')) acc[dataFormatada].pix_ecommerce += valor;
-        else if (tipo.includes('PIX')) acc[dataFormatada].pix += valor;
-        else if (tipo.includes('VR')) acc[dataFormatada].voucher += valor;
-        else if (tipo.includes('IFOOD')) acc[dataFormatada].ifood += valor;
-        else if (tipo.includes('KEETA')) acc[dataFormatada].keeta += valor;
+        // MAPEAMENTO DOS TIPOS
+        if (tipo.includes('BOLOS')) {
+          acc[dataFormatada].bolos += valor;
+        } else if (tipo.includes('DINHEIRO')) {
+          acc[dataFormatada].dinheiro += valor;
+        } else if (tipo.includes('DÉBITO')) {
+          acc[dataFormatada].debito += valor;
+        } else if (tipo.includes('CRÉDITO')) {
+          acc[dataFormatada].credito += valor;
+        } else if (tipo.includes('PIX E-COMERCE')) {
+          acc[dataFormatada].pix_ecommerce += valor;
+        } else if (tipo.includes('PIX')) {
+          acc[dataFormatada].pix += valor;
+        } else if (tipo.includes('VR')) {
+          acc[dataFormatada].voucher += valor;
+        } else if (tipo.includes('IFOOD')) {
+          acc[dataFormatada].ifood += valor;
+        } else if (tipo.includes('KEETA')) {
+          acc[dataFormatada].keeta += valor;
+        }
 
         return acc;
       }, {});
@@ -109,7 +115,7 @@ const ImportadorVendas = ({ onSucesso }) => {
   return (
     <div className="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-dashed border-emerald-200 text-center my-6">
       <h3 className="text-lg font-black text-emerald-800 uppercase tracking-tighter mb-2">Importar Histórico de Vendas</h3>
-      <p className="text-sm text-emerald-600 mb-6 font-medium">Planilha de 2.500 linhas detectada. Processando...</p>
+      <p className="text-sm text-emerald-600 mb-6 font-medium">Planilha de 2.500 linhas detectada. Agora com suporte a Bolos!</p>
       <label className={`px-8 py-3 rounded-2xl font-bold cursor-pointer transition-all shadow-lg inline-block ${loading ? 'bg-gray-400 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
         {loading ? progresso : 'Selecionar Arquivo Excel'}
         <input type="file" accept=".xlsx, .xls" onChange={processarPlanilha} className="hidden" disabled={loading} />
