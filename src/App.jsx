@@ -12,6 +12,7 @@ import Exportador from './components/Exportador'
 import CadastroFornecedores from './components/CadastroFornecedores'
 import GraficoDespesas from './components/GraficoDespesas'
 import ImportadorVendas from './components/ImportadorVendas'
+import ImportadorGastos from './components/ImportadorGastos';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dash')
@@ -124,6 +125,7 @@ function App() {
       
       {/* O componente agora funcionará com o import correto no topo */}
       <ImportadorVendas onSucesso={atualizarDados} />
+      <ImportadorGastos onSucesso={atualizarDados} />
     </div>
     
     <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
