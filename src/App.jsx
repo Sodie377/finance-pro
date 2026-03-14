@@ -149,27 +149,43 @@ function App() {
                 {/* OS 5 CARDS DE KPI */}
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-8">
                   <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-emerald-500 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bruto Total</p>
-                    <p className="text-xl font-black text-emerald-600 font-mono">R$ {totalBruto.toFixed(2)}</p>
-                  </div>
-                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-cyan-500 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Líquido</p>
-                    <p className="text-xl font-black text-cyan-600 font-mono">R$ {totalLiquido.toFixed(2)}</p>
-                  </div>
-                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-red-500 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Loja</p>
-                    <p className="text-xl font-black text-red-600 font-mono">R$ {totalLoja.toFixed(2)}</p>
-                  </div>
-                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-purple-500 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Casa</p>
-                    <p className="text-xl font-black text-purple-600 font-mono">R$ {totalPessoal.toFixed(2)}</p>
-                  </div>
-                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-blue-600 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Real</p>
-                    <p className={`text-xl font-black font-mono ${lucroReal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                      R$ {lucroReal.toFixed(2)}
-                    </p>
-                  </div>
+  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bruto Total</p>
+  <p className="text-xl font-black text-emerald-600 font-mono">
+    {formatarMoeda(totalBruto)}
+  </p>
+</div>
+
+{/* CARD 2: LÍQUIDO */}
+<div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-cyan-500 text-center">
+  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Líquido</p>
+  <p className="text-xl font-black text-cyan-600 font-mono">
+    {formatarMoeda(totalLiquido)}
+  </p>
+</div>
+
+{/* CARD 3: GASTOS LOJA */}
+<div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-red-500 text-center">
+  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Loja</p>
+  <p className="text-xl font-black text-red-600 font-mono">
+    {formatarMoeda(totalLoja)}
+  </p>
+</div>
+
+{/* CARD 4: GASTOS CASA */}
+<div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-purple-500 text-center">
+  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Casa</p>
+  <p className="text-xl font-black text-purple-600 font-mono">
+    {formatarMoeda(totalPessoal)}
+  </p>
+</div>
+
+{/* CARD 5: SALDO REAL */}
+<div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-blue-600 text-center">
+  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Real</p>
+  <p className={`text-xl font-black font-mono ${lucroReal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+    {formatarMoeda(lucroReal)}
+  </p>
+</div>
                 </div>
 
                 {/* GRÁFICOS */}
