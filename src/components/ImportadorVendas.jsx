@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase';
 
 const ImportadorVendas = ({ onSucesso }) => {
   const [loading, setLoading] = useState(false);
+  const [progresso, setProgresso] = useState('');
 
   const processarPlanilha = async (e) => {
     const file = e.target.files[0];
@@ -12,18 +13,20 @@ const ImportadorVendas = ({ onSucesso }) => {
     const reader = new FileReader();
     reader.onload = async (evt) => {
       setLoading(true);
+      setProgresso('Lendo arquivo...');
+      
       const data = evt.target.result;
       const workbook = XLSX.read(data, { type: 'binary' });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(worksheet);
 
-      // 1. Agrupar linhas por DATA
+      setProgresso('Agrupando 2.500+ linhas...');
+
       const agrupadoPorData = rows.reduce((acc, linha) => {
         const dataOriginal = linha.DATA;
         if (!dataOriginal) return acc;
 
-        // Tratar data do Excel (número ou string)
         let dataFormatada;
         if (typeof dataOriginal === 'number') {
           dataFormatada = new Date((dataOriginal - 25569) * 86400 * 1000).toISOString().split('T')[0];
@@ -40,46 +43,55 @@ const ImportadorVendas = ({ onSucesso }) => {
           };
         }
 
-        // 2. Mapear o "TIPO DE VENDA" para a coluna correta
-        const tipo = String(linha['TIPO DE VENDA']).toUpperCase().trim();
-        const valor = parseFloat(String(linha.VALOR || '0').replace('R$', '').replace('.', '').replace(',', '.').trim()) || 0;
+        const tipo = String(linha['TIPO DE VENDA'] || '').toUpperCase().trim();
+        const valor = parseFloat(String(linha.VALOR || '0').replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
 
         if (tipo.includes('DINHEIRO') || tipo.includes('BOLOS')) acc[dataFormatada].dinheiro += valor;
-        if (tipo.includes('DÉBITO')) acc[dataFormatada].debito += valor;
-        if (tipo.includes('CRÉDITO')) acc[dataFormatada].credito += valor;
-        if (tipo.includes('PIX E-COMERCE')) acc[dataFormatada].pix_ecommerce += valor;
+        else if (tipo.includes('DÉBITO')) acc[dataFormatada].debito += valor;
+        else if (tipo.includes('CRÉDITO')) acc[dataFormatada].credito += valor;
+        else if (tipo.includes('PIX E-COMERCE')) acc[dataFormatada].pix_ecommerce += valor;
         else if (tipo.includes('PIX')) acc[dataFormatada].pix += valor;
-        if (tipo.includes('VR')) acc[dataFormatada].voucher += valor;
-        if (tipo.includes('IFOOD')) acc[dataFormatada].ifood += valor;
-        if (tipo.includes('KEETA')) acc[dataFormatada].keeta += valor;
+        else if (tipo.includes('VR')) acc[dataFormatada].voucher += valor;
+        else if (tipo.includes('IFOOD')) acc[dataFormatada].ifood += valor;
+        else if (tipo.includes('KEETA')) acc[dataFormatada].keeta += valor;
 
         acc[dataFormatada].valor_bruto += valor;
         return acc;
       }, {});
 
-      // 3. Converter objeto em array e enviar para o Supabase
       const listaParaInserir = Object.values(agrupadoPorData);
+      setProgresso(`Enviando ${listaParaInserir.length} dias para o banco...`);
 
-      const { error } = await supabase.from('faturamento_diario').insert(listaParaInserir);
+      // ENVIANDO EM LOTES PARA NÃO TRAVAR
+      try {
+        const tamanhoLote = 50;
+        for (let i = 0; i < listaParaInserir.length; i += tamanhoLote) {
+          const lote = listaParaInserir.slice(i, i + tamanhoLote);
+          const { error } = await supabase.from('faturamento_diario').insert(lote);
+          if (error) throw error;
+          setProgresso(`Enviado: ${Math.min(i + tamanhoLote, listaParaInserir.length)} de ${listaParaInserir.length} dias`);
+        }
 
-      if (error) {
-        alert("Erro ao importar: " + error.message);
-      } else {
-        alert("Importação de " + listaParaInserir.length + " dias concluída!");
+        alert("🚀 Importação concluída com sucesso!");
         if (onSucesso) onSucesso();
+      } catch (error) {
+        console.error(error);
+        alert("❌ Erro ao importar: " + error.message);
+      } finally {
+        setLoading(false);
+        setProgresso('');
       }
-      setLoading(false);
     };
     reader.readAsBinaryString(file);
   };
 
   return (
-    <div className="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-dashed border-emerald-200 text-center">
+    <div className="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-dashed border-emerald-200 text-center my-6">
       <h3 className="text-lg font-black text-emerald-800 uppercase tracking-tighter mb-2">Importar Histórico de Vendas</h3>
-      <p className="text-sm text-emerald-600 mb-6 font-medium">Selecione o arquivo Excel para migrar os dados antigos</p>
+      <p className="text-sm text-emerald-600 mb-6 font-medium">Use sua planilha limpa (Sem as linhas 1 e 2 do Excel)</p>
       
-      <label className="bg-emerald-600 text-white px-8 py-3 rounded-2xl font-bold cursor-pointer hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 inline-block">
-        {loading ? 'Processando...' : 'Selecionar Arquivo'}
+      <label className={`px-8 py-3 rounded-2xl font-bold cursor-pointer transition-all shadow-lg inline-block ${loading ? 'bg-gray-400 text-white' : 'bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700'}`}>
+        {loading ? progresso : 'Selecionar Arquivo Excel'}
         <input type="file" accept=".xlsx, .xls" onChange={processarPlanilha} className="hidden" disabled={loading} />
       </label>
     </div>
