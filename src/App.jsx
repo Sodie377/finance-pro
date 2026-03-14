@@ -14,6 +14,7 @@ import GraficoDespesas from './components/GraficoDespesas'
 import ImportadorVendas from './components/ImportadorVendas'
 import ImportadorGastos from './components/ImportadorGastos'
 import ConfigCategorias from './components/ConfigCategorias'
+import Configuracoes from './components/Configuracoes'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dash')
@@ -113,12 +114,7 @@ function App() {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1 ml-64 p-10">
         
-        {activeTab === 'taxas' && (
-          <div className="space-y-8">
-            <ConfigTaxas />
-            <ConfigCategorias />
-          </div>
-        )}
+        {activeTab === 'taxas' && <Configuracoes />}
         {activeTab === 'fornecedores' && <CadastroFornecedores />}
 
         {activeTab === 'relatorios' && (
