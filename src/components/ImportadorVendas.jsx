@@ -39,7 +39,8 @@ const ImportadorVendas = ({ onSucesso }) => {
           acc[dataFormatada] = {
             data_referencia: dataFormatada,
             dinheiro: 0, debito: 0, credito: 0, pix: 0, 
-            pix_ecommerce: 0, voucher: 0, ifood: 0, keeta: 0, valor_bruto: 0
+            pix_ecommerce: 0, voucher: 0, ifood: 0, keeta: 0
+            // REMOVI O valor_bruto DAQUI
           };
         }
 
@@ -55,14 +56,13 @@ const ImportadorVendas = ({ onSucesso }) => {
         else if (tipo.includes('IFOOD')) acc[dataFormatada].ifood += valor;
         else if (tipo.includes('KEETA')) acc[dataFormatada].keeta += valor;
 
-        acc[dataFormatada].valor_bruto += valor;
+        // REMOVI A LINHA QUE SOMAVA NO valor_bruto AQUI
         return acc;
       }, {});
 
       const listaParaInserir = Object.values(agrupadoPorData);
       setProgresso(`Enviando ${listaParaInserir.length} dias para o banco...`);
 
-      // ENVIANDO EM LOTES PARA NÃO TRAVAR
       try {
         const tamanhoLote = 50;
         for (let i = 0; i < listaParaInserir.length; i += tamanhoLote) {
