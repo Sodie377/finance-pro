@@ -109,6 +109,7 @@ function App() {
             <div className="mb-10">
               <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800">Central de Exportação</h1>
               <p className="text-slate-400 font-medium">Gere arquivos PDF, Excel ou OFX do período selecionado.</p>
+              <ImportadorVendas onSucesso={atualizarDados} />
             </div>
             <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
             <Exportador vendas={vendas} gastos={gastos} filtro={filtro} />
