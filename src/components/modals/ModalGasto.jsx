@@ -7,12 +7,13 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
   const [favorecido, setFavorecido] = useState('');
   const [categoria, setCategoria] = useState('');
   const [fornecedores, setFornecedores] = useState([]);
+  const [categoriasBD, setCategoriasBD] = useState([]); // Novo estado para categorias
 
-  // Atualiza o tipo sempre que o modal abre (para vir Loja ou Pessoal correto)
   useEffect(() => {
     if (isOpen) {
       setTipo(tipoPadrao);
       buscarFornecedores();
+      buscarCategorias(); // Busca categorias do banco ao abrir
     }
   }, [isOpen, tipoPadrao]);
 
@@ -21,10 +22,15 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
     if (data) setFornecedores(data.map(f => f.nome));
   };
 
+  const buscarCategorias = async () => {
+    const { data } = await supabase.from('categorias_gastos').select('nome').order('nome');
+    if (data) setCategoriasBD(data);
+  };
+
   const handleSalvar = async () => {
     if (!valor || !favorecido) return alert("Preencha o valor e o favorecido!");
 
-    // LÓGICA AUTOMÁTICA: Se o favorecido não existe na lista, cadastra ele agora
+    // LÓGICA AUTOMÁTICA: Se o favorecido não existe, cadastra
     const existe = fornecedores.some(f => f.toLowerCase() === favorecido.toLowerCase());
     if (!existe) {
       await supabase.from('fornecedores').insert([{ nome: favorecido, tipo: tipo }]);
@@ -34,12 +40,13 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
       valor: parseFloat(valor),
       tipo,
       favorecido,
-      categoria,
+      categoria: categoria || 'Outros', // Fallback caso não selecione
       data: new Date().toISOString().split('T')[0]
     };
 
     onSalvar(dados);
     limparCampos();
+    onClose(); // Fecha o modal após salvar
   };
 
   const limparCampos = () => {
@@ -59,7 +66,6 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
         </div>
 
         <div className="p-8 space-y-5">
-          {/* Seletor de Tipo (Loja/Pessoal) */}
           <div className="flex bg-gray-100 p-1 rounded-2xl">
             <button onClick={() => setTipo('Loja')} className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${tipo === 'Loja' ? 'bg-white shadow-sm text-red-600' : 'text-gray-400'}`}>LOJA</button>
             <button onClick={() => setTipo('Pessoal')} className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${tipo === 'Pessoal' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-400'}`}>PESSOAL</button>
@@ -84,6 +90,7 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
               <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Valor (R$)</label>
               <input 
                 type="number"
+                step="0.01"
                 className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-slate-800 font-mono font-bold"
                 placeholder="0,00"
                 value={valor}
@@ -98,10 +105,10 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
                 onChange={(e) => setCategoria(e.target.value)}
               >
                 <option value="">Outros</option>
-                <option value="Moradia">Moradia</option>
-                <option value="Insumos">Insumos</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Saúde">Saúde</option>
+                {/* MAP DIRETO DO BANCO DE DADOS */}
+                {categoriasBD.map((cat, i) => (
+                  <option key={i} value={cat.nome}>{cat.nome}</option>
+                ))}
               </select>
             </div>
           </div>
