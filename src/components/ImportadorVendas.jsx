@@ -31,7 +31,7 @@ const ImportadorVendas = ({ onSucesso }) => {
         if (typeof dataOriginal === 'number') {
           dataFormatada = new Date((dataOriginal - 25569) * 86400 * 1000).toISOString().split('T')[0];
         } else {
-          const partes = dataOriginal.split('/');
+          const partes = String(dataOriginal).split('/');
           dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`;
         }
 
@@ -40,12 +40,30 @@ const ImportadorVendas = ({ onSucesso }) => {
             data_referencia: dataFormatada,
             dinheiro: 0, debito: 0, credito: 0, pix: 0, 
             pix_ecommerce: 0, voucher: 0, ifood: 0, keeta: 0
-            // REMOVI O valor_bruto DAQUI
           };
         }
 
         const tipo = String(linha['TIPO DE VENDA'] || '').toUpperCase().trim();
-        const valor = parseFloat(String(linha.VALOR || '0').replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+        
+        // --- LÓGICA DE VALOR CORRIGIDA ---
+        let valorRaw = String(linha.VALOR || '0').replace('R$', '').replace(/\s/g, '').trim();
+        
+        let valor;
+        // Se o valor tem vírgula e ponto (ex: 1.250,50), removemos o ponto e trocamos a vírgula
+        if (valorRaw.includes(',') && valorRaw.includes('.')) {
+          valor = parseFloat(valorRaw.replace(/\./g, '').replace(',', '.'));
+        } 
+        // Se só tem vírgula (ex: 783,60), trocamos por ponto
+        else if (valorRaw.includes(',')) {
+          valor = parseFloat(valorRaw.replace(',', '.'));
+        } 
+        // Se já for formato limpo (ex: 783.60)
+        else {
+          valor = parseFloat(valorRaw);
+        }
+        
+        if (isNaN(valor)) valor = 0;
+        // --------------------------------
 
         if (tipo.includes('DINHEIRO') || tipo.includes('BOLOS')) acc[dataFormatada].dinheiro += valor;
         else if (tipo.includes('DÉBITO')) acc[dataFormatada].debito += valor;
@@ -56,7 +74,6 @@ const ImportadorVendas = ({ onSucesso }) => {
         else if (tipo.includes('IFOOD')) acc[dataFormatada].ifood += valor;
         else if (tipo.includes('KEETA')) acc[dataFormatada].keeta += valor;
 
-        // REMOVI A LINHA QUE SOMAVA NO valor_bruto AQUI
         return acc;
       }, {});
 
