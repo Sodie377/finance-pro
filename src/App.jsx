@@ -101,7 +101,7 @@ function App() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
   };
 
-  const totalBruto = vendas.reduce((acc, v) => acc + (v.valor_bruto || 0) + (v.bolos || 0), 0)
+  const totalBruto = vendas.reduce((acc, v) => acc + (v.valor_bruto || 0), 0)
   const totalLiquido = calcularTotalLiquido();
   const totalLoja = gastos.filter(g => g.tipo === 'Loja').reduce((acc, g) => acc + (g.valor || 0), 0)
   const totalPessoal = gastos.filter(g => g.tipo === 'Pessoal').reduce((acc, g) => acc + (g.valor || 0), 0)
@@ -114,7 +114,6 @@ function App() {
       
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-10 transition-all w-full overflow-x-hidden">
         
-        {/* TELA DE FECHAMENTO DE CAIXA */}
         {activeTab === 'fechamento' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-8">
@@ -143,13 +142,12 @@ function App() {
           </div>
         )}
 
-        {/* RENDERIZAÇÃO DAS ABAS PRINCIPAIS (DASH, VENDAS E GASTOS) */}
         {activeTab !== 'taxas' && activeTab !== 'relatorios' && activeTab !== 'fornecedores' && activeTab !== 'fechamento' && (
           <>
             <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
               <div className="text-center md:text-left">
                 <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Visão Geral</p>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tighter">
+                <h2 className="text-3xl font-black text-slate-800 tracking-tighter">
                   {activeTab === 'dash' ? 'DASHBOARD' : activeTab === 'vendas' ? 'VENDAS' : activeTab === 'gastos_biz' ? 'GASTOS LOJA' : 'GASTOS CASA'}
                 </h2>
               </div>
@@ -161,25 +159,25 @@ function App() {
 
             <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
 
-            {/* RESTAURADO: CARD DE TOTAL DO PERÍODO ESPECÍFICO */}
+            {/* CARD DE TOTAL EM DESTAQUE - REINSERIDO E AMPLIADO */}
             {activeTab !== 'dash' && (
-              <div className="mb-6 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className={`p-6 rounded-[2.5rem] shadow-sm border-l-8 flex items-center justify-between ${
-                  activeTab === 'vendas' ? 'bg-emerald-50 border-emerald-500' : 
-                  activeTab === 'gastos_biz' ? 'bg-red-50 border-red-500' : 'bg-purple-50 border-purple-500'
+              <div className="mb-8 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className={`p-8 rounded-[2.5rem] shadow-xl border-l-[12px] flex items-center justify-between bg-white ${
+                  activeTab === 'vendas' ? 'border-emerald-500' : 
+                  activeTab === 'gastos_biz' ? 'border-red-500' : 'border-purple-500'
                 }`}>
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">
-                      Total do Período ({activeTab === 'vendas' ? 'Faturamento Bruto' : 'Despesas Totais'})
+                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                      Total Acumulado ({filtro})
                     </p>
-                    <p className={`text-3xl font-black font-mono ${
-                      activeTab === 'vendas' ? 'text-emerald-700' : 
-                      activeTab === 'gastos_biz' ? 'text-red-700' : 'text-purple-700'
+                    <p className={`text-5xl font-black font-mono tracking-tighter ${
+                      activeTab === 'vendas' ? 'text-emerald-600' : 
+                      activeTab === 'gastos_biz' ? 'text-red-600' : 'text-purple-600'
                     }`}>
                       {activeTab === 'vendas' ? formatarMoeda(totalBruto) : activeTab === 'gastos_biz' ? formatarMoeda(totalLoja) : formatarMoeda(totalPessoal)}
                     </p>
                   </div>
-                  <div className="text-4xl opacity-20">
+                  <div className="hidden md:block text-6xl opacity-10 font-black">
                     {activeTab === 'vendas' ? '💰' : activeTab === 'gastos_biz' ? '🏢' : '🏠'}
                   </div>
                 </div>
