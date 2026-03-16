@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 
 const NovaVenda = ({ onSalvar }) => {
   const [dados, setDados] = useState({
-    data_referencia: new Date().toISOString().split('T')[0], // Data padrão: HOJE
+    data_referencia: new Date().toISOString().split('T')[0], 
     dinheiro: '', debito: '', credito: '', 
     pix: '', pix_ecommerce: '', voucher: '',
     ifood: '', keeta: '', bolos: ''
@@ -22,31 +22,30 @@ const NovaVenda = ({ onSalvar }) => {
     }
   };
 
-  // O total visual soma TUDO (Inclusive bolos)
   const totalGeral = Object.entries(dados).reduce((acc, [key, val]) => {
     return key === 'data_referencia' ? acc : acc + (Number(val) || 0);
   }, 0);
 
+  // NOVA ORDEM BASEADA NA SUA PLANILHA
   const campos = [
-    { id: 'dinheiro', label: '💵 Dinheiro', color: 'focus:ring-green-500' },
     { id: 'debito', label: '💳 Débito', color: 'focus:ring-blue-500' },
     { id: 'credito', label: '💳 Crédito', color: 'focus:ring-orange-500' },
-    { id: 'pix', label: '📱 Pix', color: 'focus:ring-emerald-500' },
     { id: 'pix_ecommerce', label: '🌐 Pix E-commerce', color: 'focus:ring-teal-500' },
-    { id: 'voucher', label: '🎟️ Voucher', color: 'focus:ring-yellow-500' },
-    { id: 'ifood', label: '🛵 iFood', color: 'focus:ring-red-500' },
+    { id: 'voucher', label: '🎟️ Vale-Refeição (VR)', color: 'focus:ring-yellow-500' },
+    { id: 'pix', label: '📱 Pix (Loja)', color: 'focus:ring-emerald-500' },
     { id: 'keeta', label: '🥡 Keeta', color: 'focus:ring-pink-500' },
+    { id: 'ifood', label: '🛵 iFood', color: 'focus:ring-red-500' },
+    { id: 'dinheiro', label: '💵 Dinheiro', color: 'focus:ring-green-500' },
     { id: 'bolos', label: '🧁 Bolos (Interno)', color: 'focus:ring-purple-600' },
   ];
 
   return (
     <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-2xl w-full border-t-8 border-emerald-600 animate-in zoom-in duration-300">
       
-      {/* CABEÇALHO COM SELETOR DE DATA */}
       <div className="mb-8 flex justify-between items-center bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
         <div>
           <h2 className="text-xl font-black text-gray-800 uppercase tracking-tighter">📊 Fechamento de Caixa</h2>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Preencha os valores do dia</p>
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Preencha na ordem da planilha</p>
         </div>
         
         <div className="flex flex-col items-end">
@@ -62,7 +61,7 @@ const NovaVenda = ({ onSalvar }) => {
       
       <div className="grid grid-cols-2 gap-x-6 gap-y-4">
         {campos.map((item, index) => (
-          <div key={item.id} className={`flex flex-col ${item.id === 'bolos' ? 'bg-purple-50 p-3 rounded-[1.5rem] border border-purple-100' : ''}`}>
+          <div key={item.id} className={`flex flex-col ${item.id === 'bolos' ? 'col-span-2 bg-purple-50 p-3 rounded-[1.5rem] border border-purple-100 mt-2' : ''}`}>
             <label className={`text-[9px] font-black uppercase mb-1 ml-2 tracking-widest ${item.id === 'bolos' ? 'text-purple-600' : 'text-gray-400'}`}>
               {item.label}
             </label>
@@ -94,7 +93,6 @@ const NovaVenda = ({ onSalvar }) => {
             const valoresNum = { ...dados };
             let brutoOficial = 0;
 
-            // Transforma strings em números e calcula o Bruto da Franquia
             Object.keys(valoresNum).forEach(key => {
               if (key !== 'data_referencia') {
                 const n = Number(valoresNum[key]) || 0;
@@ -103,6 +101,7 @@ const NovaVenda = ({ onSalvar }) => {
               }
             });
 
+            // Envia para o App.jsx, onde o campo valor_bruto será removido antes do insert final
             onSalvar({
               ...valoresNum,
               valor_bruto: brutoOficial
