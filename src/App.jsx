@@ -31,7 +31,6 @@ function App() {
   const [isModalVendaOpen, setIsModalVendaOpen] = useState(false)
   const [isModalGastoOpen, setIsModalGastoOpen] = useState(false)
 
-  // 1. Função de busca de dados
   const atualizarDados = async () => {
     let queryVendas = supabase.from('faturamento_diario').select('*').order('data_referencia', { ascending: false });
     let queryGastos = supabase.from('despesas').select('*').order('data', { ascending: false });
@@ -65,12 +64,9 @@ function App() {
     if (resTaxas.data) setTaxas(resTaxas.data);
   }
 
-  // 2. Função de exclusão
   const excluirRegistro = async (id, tabela) => {
     if (!confirm("Tem certeza que deseja excluir este registro permanentemente?")) return;
-
     const { error } = await supabase.from(tabela).delete().eq('id', id);
-
     if (error) {
       alert("Erro ao excluir: " + error.message);
     } else {
@@ -114,7 +110,9 @@ function App() {
   return (
     <div className="flex bg-gray-50 min-h-screen w-full font-sans text-gray-900">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="flex-1 md:ml-64 p-4 md:p-10 transition-all">
+      
+      {/* AJUSTE MOBILE: ml-0 para celular, ml-64 apenas para PC */}
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-10 transition-all w-full overflow-x-hidden">
         
         {activeTab === 'taxas' && <Configuracoes />}
         {activeTab === 'fornecedores' && <CadastroFornecedores />}
@@ -122,8 +120,7 @@ function App() {
         {activeTab === 'relatorios' && (
           <div className="space-y-6">
             <div className="mb-10">
-              <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800">Central de Exportação</h1>
-              <p className="text-slate-400 font-medium mb-6">Gere arquivos PDF, Excel ou OFX do período selecionado.</p>
+              <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800 text-center md:text-left">Central de Exportação</h1>
               <ImportadorVendas onSucesso={atualizarDados} />
               <ImportadorGastos onSucesso={atualizarDados} />
             </div>
@@ -134,21 +131,22 @@ function App() {
 
         {activeTab !== 'taxas' && activeTab !== 'relatorios' && activeTab !== 'fornecedores' && (
           <>
-            <div className="flex justify-between items-center mb-10">
-              <div>
+            <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+              <div className="text-center md:text-left">
                 <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Visão Geral</p>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tighter">
                   {activeTab === 'dash' ? 'DASHBOARD' : activeTab === 'vendas' ? 'VENDAS' : 'EXTRATO DE GASTOS'}
                 </h2>
               </div>
-              <div className="flex gap-4">
-                <button onClick={() => setIsModalVendaOpen(true)} className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all hover:-translate-y-1">+ Nova Venda</button>
-                <button onClick={() => setIsModalGastoOpen(true)} className="bg-red-500 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-red-200 hover:bg-red-600 transition-all hover:-translate-y-1">- Novo Gasto</button>
+              <div className="flex gap-4 w-full md:w-auto">
+                <button onClick={() => setIsModalVendaOpen(true)} className="flex-1 md:flex-none bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Venda</button>
+                <button onClick={() => setIsModalGastoOpen(true)} className="flex-1 md:flex-none bg-red-500 text-white px-6 py-3 rounded-2xl font-bold shadow-lg">- Gasto</button>
               </div>
             </div>
 
             <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
 
+            {/* CARDS TOTAIS */}
             {activeTab !== 'dash' && (
               <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className={`p-6 rounded-[2.5rem] shadow-sm border-l-8 flex items-center justify-between ${
@@ -156,18 +154,10 @@ function App() {
                   activeTab === 'gastos_biz' ? 'bg-red-50 border-red-500' : 'bg-purple-50 border-purple-500'
                 }`}>
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">
-                      Total do Período ({activeTab === 'vendas' ? 'Bruto' : 'Despesas'})
-                    </p>
-                    <p className={`text-3xl font-black font-mono ${
-                      activeTab === 'vendas' ? 'text-emerald-700' : 
-                      activeTab === 'gastos_biz' ? 'text-red-700' : 'text-purple-700'
-                    }`}>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Total do Período</p>
+                    <p className={`text-3xl font-black font-mono ${activeTab === 'vendas' ? 'text-emerald-700' : activeTab === 'gastos_biz' ? 'text-red-700' : 'text-purple-700'}`}>
                       {activeTab === 'vendas' ? formatarMoeda(totalBruto) : activeTab === 'gastos_biz' ? formatarMoeda(totalLoja) : formatarMoeda(totalPessoal)}
                     </p>
-                  </div>
-                  <div className="text-4xl opacity-20">
-                    {activeTab === 'vendas' ? '💰' : activeTab === 'gastos_biz' ? '🏢' : '🏠'}
                   </div>
                 </div>
               </div>
@@ -175,64 +165,62 @@ function App() {
 
             {activeTab === 'dash' && (
               <>
+                {/* GRID DE CARDS RESPONSIVO (2 colunas no celular) */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 mt-4 md:mt-8">
-                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-emerald-500 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bruto Total</p>
-                    <p className="text-xl font-black text-emerald-600 font-mono">{formatarMoeda(totalBruto)}</p>
+                  <div className="bg-white p-4 rounded-3xl shadow-sm border-b-8 border-emerald-500 text-center">
+                    <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase">Bruto</p>
+                    <p className="text-sm md:text-lg font-black text-emerald-600">{formatarMoeda(totalBruto)}</p>
                   </div>
-                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-cyan-500 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Líquido</p>
-                    <p className="text-xl font-black text-cyan-600 font-mono">{formatarMoeda(totalLiquido)}</p>
+                  <div className="bg-white p-4 rounded-3xl shadow-sm border-b-8 border-cyan-500 text-center">
+                    <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase">Líquido</p>
+                    <p className="text-sm md:text-lg font-black text-cyan-600">{formatarMoeda(totalLiquido)}</p>
                   </div>
-                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-red-500 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Loja</p>
-                    <p className="text-xl font-black text-red-600 font-mono">{formatarMoeda(totalLoja)}</p>
+                  <div className="bg-white p-4 rounded-3xl shadow-sm border-b-8 border-red-500 text-center">
+                    <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase">Loja</p>
+                    <p className="text-sm md:text-lg font-black text-red-600">{formatarMoeda(totalLoja)}</p>
                   </div>
-                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-purple-500 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gastos Casa</p>
-                    <p className="text-xl font-black text-purple-600 font-mono">{formatarMoeda(totalPessoal)}</p>
+                  <div className="bg-white p-4 rounded-3xl shadow-sm border-b-8 border-purple-500 text-center">
+                    <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase">Casa</p>
+                    <p className="text-sm md:text-lg font-black text-purple-600">{formatarMoeda(totalPessoal)}</p>
                   </div>
-                  <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-blue-600 text-center">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Real</p>
-                    <p className={`text-xl font-black font-mono ${lucroReal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{formatarMoeda(lucroReal)}</p>
+                  <div className="col-span-2 md:col-span-1 bg-white p-4 rounded-3xl shadow-sm border-b-8 border-blue-600 text-center">
+                    <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase">Saldo</p>
+                    <p className={`text-sm md:text-lg font-black ${lucroReal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{formatarMoeda(lucroReal)}</p>
                   </div>
                 </div>
 
-                <div className="mt-8">
-                  <GraficoEvolucao vendas={vendas} taxas={taxas} />
-                </div>
+                <div className="mt-8"><GraficoEvolucao vendas={vendas} taxas={taxas} /></div>
                 <GraficoDespesas gastos={gastos} />
               </>
             )}
 
-            {/* AQUI PASSAMOS A FUNÇÃO DE EXCLUIR PARA OS EXTRATOS */}
             {activeTab === 'vendas' && <ExtratoVendas lista={vendas} taxas={taxas} onExcluir={excluirRegistro} />}
             
             {(activeTab === 'gastos_biz' || activeTab === 'gastos_pers') && (
               <div className="space-y-4">
-                {gastos.filter(g => g.tipo === (activeTab === 'gastos_pers' ? 'Pessoal' : 'Loja')).length > 0 ? (
-                  <ExtratoGastos 
-                    lista={gastos.filter(g => g.tipo === (activeTab === 'gastos_pers' ? 'Pessoal' : 'Loja'))} 
-                    onExcluir={excluirRegistro}
-                  />
-                ) : (
-                  <div className="text-center p-20 bg-white rounded-3xl border-2 border-dashed border-gray-200">
-                    <p className="text-gray-400 font-medium italic">Nenhum gasto encontrado neste período.</p>
-                  </div>
-                )}
+                <ExtratoGastos lista={gastos.filter(g => g.tipo === (activeTab === 'gastos_pers' ? 'Pessoal' : 'Loja'))} onExcluir={excluirRegistro} />
               </div>
             )}
           </>
         )}
+
+        {/* =============================================================
+            CORREÇÃO DO ERRO "valor_bruto":
+            Remover o campo valor_bruto do insert, pois o banco calcula sozinho
+           ============================================================= */}
         <ModalVenda 
           isOpen={isModalVendaOpen} 
           onClose={() => setIsModalVendaOpen(false)} 
           onSalvar={async (d) => {
-            const { error } = await supabase.from('faturamento_diario').insert([d]);
+            // Criamos uma cópia dos dados SEM o valor_bruto
+            const { valor_bruto, ...dadosSemBruto } = d; 
+            const { error } = await supabase.from('faturamento_diario').insert([dadosSemBruto]);
+            
             if (error) alert("Erro: " + error.message);
             else { atualizarDados(); setIsModalVendaOpen(false); }
           }} 
         />
+
         <ModalGasto 
           isOpen={isModalGastoOpen} 
           onClose={() => setIsModalGastoOpen(false)} 
