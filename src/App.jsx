@@ -114,7 +114,7 @@ function App() {
   return (
     <div className="flex bg-gray-50 min-h-screen w-full font-sans text-gray-900">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="flex-1 ml-64 p-10">
+      <main className="flex-1 md:ml-64 p-4 md:p-10 transition-all">
         
         {activeTab === 'taxas' && <Configuracoes />}
         {activeTab === 'fornecedores' && <CadastroFornecedores />}
