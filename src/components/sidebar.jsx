@@ -11,6 +11,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     { id: 'gastos_pers', label: 'Gastos Casa', icon: '🏠' },
     { id: 'fornecedores', label: 'Fornecedores', icon: '🤝' },
     { id: 'taxas', label: 'Taxas', icon: '⚙️' },
+    { id: 'fechamento', label: 'Fechamento', icon: '📦' }, // Novo item acima de Relatórios
     { id: 'relatorios', label: 'Relatórios', icon: '📋' }
   ];
 
@@ -54,7 +55,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           /> 
         </div>
 
-        <nav className="space-y-2 flex-1">
+        <nav className="space-y-2 flex-1 overflow-y-auto">
           {menu.map((item) => (
             <button
               key={item.id}
@@ -71,7 +72,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           ))}
         </nav>
 
-        {/* Rodapé opcional (ajuda a preencher espaço no mobile) */}
+        {/* Rodapé opcional */}
         <div className="pt-6 border-t border-gray-800 text-[10px] text-gray-500 text-center uppercase tracking-widest font-bold">
           v2.0 Beta
         </div>

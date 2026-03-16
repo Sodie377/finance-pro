@@ -15,6 +15,7 @@ import ImportadorVendas from './components/ImportadorVendas'
 import ImportadorGastos from './components/ImportadorGastos'
 import ConfigCategorias from './components/ConfigCategorias'
 import Configuracoes from './components/Configuracoes'
+import FechamentoCaixa from './components/FechamentoCaixa' // <-- 1. NOVO IMPORT
 
 function App() {
   const [activeTab, setActiveTab] = useState('dash')
@@ -111,9 +112,22 @@ function App() {
     <div className="flex bg-gray-50 min-h-screen w-full font-sans text-gray-900">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      {/* AJUSTE MOBILE: ml-0 para celular, ml-64 apenas para PC */}
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-10 transition-all w-full overflow-x-hidden">
         
+        {/* 2. RENDERIZAÇÃO DA TELA DE FECHAMENTO */}
+        {activeTab === 'fechamento' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-8">
+              <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800">Fechamento de Caixa</h1>
+              <p className="text-slate-400 font-medium">Siga as abas para realizar a conferência detalhada.</p>
+            </div>
+            <FechamentoCaixa onSucesso={() => {
+              atualizarDados();
+              setActiveTab('dash'); // Volta para o dashboard após salvar
+            }} />
+          </div>
+        )}
+
         {activeTab === 'taxas' && <Configuracoes />}
         {activeTab === 'fornecedores' && <CadastroFornecedores />}
 
@@ -129,7 +143,8 @@ function App() {
           </div>
         )}
 
-        {activeTab !== 'taxas' && activeTab !== 'relatorios' && activeTab !== 'fornecedores' && (
+        {/* 3. CONDIÇÃO PARA NÃO MOSTRAR DASHBOARD QUANDO ESTIVER NO FECHAMENTO */}
+        {activeTab !== 'taxas' && activeTab !== 'relatorios' && activeTab !== 'fornecedores' && activeTab !== 'fechamento' && (
           <>
             <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
               <div className="text-center md:text-left">
@@ -146,26 +161,8 @@ function App() {
 
             <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
 
-            {/* CARDS TOTAIS */}
-            {activeTab !== 'dash' && (
-              <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className={`p-6 rounded-[2.5rem] shadow-sm border-l-8 flex items-center justify-between ${
-                  activeTab === 'vendas' ? 'bg-emerald-50 border-emerald-500' : 
-                  activeTab === 'gastos_biz' ? 'bg-red-50 border-red-500' : 'bg-purple-50 border-purple-500'
-                }`}>
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Total do Período</p>
-                    <p className={`text-3xl font-black font-mono ${activeTab === 'vendas' ? 'text-emerald-700' : activeTab === 'gastos_biz' ? 'text-red-700' : 'text-purple-700'}`}>
-                      {activeTab === 'vendas' ? formatarMoeda(totalBruto) : activeTab === 'gastos_biz' ? formatarMoeda(totalLoja) : formatarMoeda(totalPessoal)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {activeTab === 'dash' && (
               <>
-                {/* GRID DE CARDS RESPONSIVO (2 colunas no celular) */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 mt-4 md:mt-8">
                   <div className="bg-white p-4 rounded-3xl shadow-sm border-b-8 border-emerald-500 text-center">
                     <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase">Bruto</p>
@@ -204,18 +201,12 @@ function App() {
           </>
         )}
 
-        {/* =============================================================
-            CORREÇÃO DO ERRO "valor_bruto":
-            Remover o campo valor_bruto do insert, pois o banco calcula sozinho
-           ============================================================= */}
         <ModalVenda 
           isOpen={isModalVendaOpen} 
           onClose={() => setIsModalVendaOpen(false)} 
           onSalvar={async (d) => {
-            // Criamos uma cópia dos dados SEM o valor_bruto
             const { valor_bruto, ...dadosSemBruto } = d; 
             const { error } = await supabase.from('faturamento_diario').insert([dadosSemBruto]);
-            
             if (error) alert("Erro: " + error.message);
             else { atualizarDados(); setIsModalVendaOpen(false); }
           }} 
