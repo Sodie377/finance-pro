@@ -1,6 +1,9 @@
 import React from 'react';
 
-const ExtratoVendas = ({ lista, taxas }) => {
+const ExtratoVendas = ({ lista, taxas, onExcluir }) => {
+  // Pega a data de hoje no formato YYYY-MM-DD para a trava de exclusão
+  const hoje = new Date().toLocaleDateString('en-CA');
+
   const formatarMoeda = (valor) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -71,18 +74,30 @@ const ExtratoVendas = ({ lista, taxas }) => {
                   <td className="p-4 text-emerald-600 font-medium">{formatarMoeda(item.pix)}</td>
                   <td className="p-4 text-red-500 font-medium">{formatarMoeda(appsTotal)}</td>
                   
-                  {/* Coluna Bolos inserida no meio para manter seu estilo */}
                   <td className="p-4 bg-purple-50 text-purple-700 font-black">
                     {formatarMoeda(item.bolos)}
                   </td>
 
                   <td className="p-4 text-gray-500 font-medium">{formatarMoeda(outrosTotal)}</td>
                   
-                  <td className="p-4 text-right bg-emerald-50">
+                  <td className="p-4 text-right bg-emerald-50 relative pr-12">
                     <div className="flex flex-col items-end">
                       <span className="font-black text-emerald-800 text-base">{formatarMoeda(liquido)}</span>
                       <span className="text-[9px] font-bold text-emerald-600 uppercase">Bruto: {formatarMoeda(brutoTotalReal)}</span>
                     </div>
+
+                    {/* BOTÃO EXCLUIR: Só aparece se a data_referencia for HOJE */}
+                    {item.data_referencia === hoje && (
+                      <button 
+                        onClick={() => onExcluir(item.id, 'faturamento_diario')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 bg-red-50 text-red-500 p-2 rounded-full hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                        title="Excluir lançamento"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
                   </td>
                 </tr>
               );

@@ -31,13 +31,13 @@ function App() {
   const [isModalVendaOpen, setIsModalVendaOpen] = useState(false)
   const [isModalGastoOpen, setIsModalGastoOpen] = useState(false)
 
+  // 1. Função de busca de dados
   const atualizarDados = async () => {
     let queryVendas = supabase.from('faturamento_diario').select('*').order('data_referencia', { ascending: false });
     let queryGastos = supabase.from('despesas').select('*').order('data', { ascending: false });
     const resTaxas = await supabase.from('taxas_cartao').select('*');
 
-    // Ajuste para pegar a data local correta sem problemas de fuso
-    const hojeStr = new Date().toLocaleDateString('en-CA'); // Gera YYYY-MM-DD
+    const hojeStr = new Date().toLocaleDateString('en-CA'); 
 
     if (filtro === 'hoje') {
       queryVendas = queryVendas.eq('data_referencia', hojeStr);
@@ -65,23 +65,30 @@ function App() {
     if (resTaxas.data) setTaxas(resTaxas.data);
   }
 
+  // 2. Função de exclusão
+  const excluirRegistro = async (id, tabela) => {
+    if (!confirm("Tem certeza que deseja excluir este registro permanentemente?")) return;
+
+    const { error } = await supabase.from(tabela).delete().eq('id', id);
+
+    if (error) {
+      alert("Erro ao excluir: " + error.message);
+    } else {
+      atualizarDados(); 
+    }
+  };
+
   useEffect(() => { atualizarDados(); }, [filtro, customDatas]);
 
   const calcularTotalLiquido = () => {
     return vendas.reduce((accTotal, dia) => {
       let liquidoDia = 0;
-      
-      const camposVenda = [
-        'dinheiro', 'debito', 'credito', 'pix', 
-        'pix_ecommerce', 'voucher', 'ifood', 'keeta', 'bolos'
-      ];
+      const camposVenda = ['dinheiro', 'debito', 'credito', 'pix', 'pix_ecommerce', 'voucher', 'ifood', 'keeta', 'bolos'];
 
       camposVenda.forEach(campo => {
         const valorBruto = dia[campo] || 0;
         const conf = taxas.find(t => t.vinculo === campo);
 
-        // Só aplica taxa se houver configuração e o campo não for 'bolos' ou 'dinheiro'
-        // (Assumindo que bolos e dinheiro são sempre 100% líquidos)
         if (conf && valorBruto > 0 && campo !== 'bolos' && campo !== 'dinheiro') {
           const desconto = (valorBruto * (conf.taxa_percentual / 100)) + (conf.taxa_fixa || 0);
           liquidoDia += (valorBruto - desconto);
@@ -94,19 +101,15 @@ function App() {
   };
 
   const formatarMoeda = (valor) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(valor || 0);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
   };
 
-  // SOMA O BRUTO + BOLOS
   const totalBruto = vendas.reduce((acc, v) => acc + (v.valor_bruto || 0) + (v.bolos || 0), 0)
   const totalLiquido = calcularTotalLiquido();
   const totalLoja = gastos.filter(g => g.tipo === 'Loja').reduce((acc, g) => acc + (g.valor || 0), 0)
   const totalPessoal = gastos.filter(g => g.tipo === 'Pessoal').reduce((acc, g) => acc + (g.valor || 0), 0)
-  const lucroReal = totalLiquido - totalLoja // Lucro da empresa (sem tirar o pessoal ainda)
-  const saldoFinal = totalLiquido - totalLoja - totalPessoal // O que sobra no bolso
+  const lucroReal = totalLiquido - totalLoja
+  const saldoFinal = totalLiquido - totalLoja - totalPessoal
 
   return (
     <div className="flex bg-gray-50 min-h-screen w-full font-sans text-gray-900">
@@ -146,9 +149,6 @@ function App() {
 
             <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
 
-            {/* =============================================================
-                AQUI ENTRA O NOVO CARD DE TOTAL PARA VENDAS E GASTOS 
-                ============================================================= */}
             {activeTab !== 'dash' && (
               <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className={`p-6 rounded-[2.5rem] shadow-sm border-l-8 flex items-center justify-between ${
@@ -163,12 +163,7 @@ function App() {
                       activeTab === 'vendas' ? 'text-emerald-700' : 
                       activeTab === 'gastos_biz' ? 'text-red-700' : 'text-purple-700'
                     }`}>
-                      {activeTab === 'vendas' 
-                        ? formatarMoeda(totalBruto) 
-                        : activeTab === 'gastos_biz' 
-                          ? formatarMoeda(totalLoja) 
-                          : formatarMoeda(totalPessoal)
-                      }
+                      {activeTab === 'vendas' ? formatarMoeda(totalBruto) : activeTab === 'gastos_biz' ? formatarMoeda(totalLoja) : formatarMoeda(totalPessoal)}
                     </p>
                   </div>
                   <div className="text-4xl opacity-20">
@@ -177,11 +172,10 @@ function App() {
                 </div>
               </div>
             )}
-            {/* ============================================================= */}
 
             {activeTab === 'dash' && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-8">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 mt-4 md:mt-8">
                   <div className="bg-white p-5 rounded-3xl shadow-sm border-b-8 border-emerald-500 text-center">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bruto Total</p>
                     <p className="text-xl font-black text-emerald-600 font-mono">{formatarMoeda(totalBruto)}</p>
@@ -211,12 +205,16 @@ function App() {
               </>
             )}
 
-            {activeTab === 'vendas' && <ExtratoVendas lista={vendas} taxas={taxas} />}
+            {/* AQUI PASSAMOS A FUNÇÃO DE EXCLUIR PARA OS EXTRATOS */}
+            {activeTab === 'vendas' && <ExtratoVendas lista={vendas} taxas={taxas} onExcluir={excluirRegistro} />}
             
             {(activeTab === 'gastos_biz' || activeTab === 'gastos_pers') && (
               <div className="space-y-4">
                 {gastos.filter(g => g.tipo === (activeTab === 'gastos_pers' ? 'Pessoal' : 'Loja')).length > 0 ? (
-                  <ExtratoGastos lista={gastos.filter(g => g.tipo === (activeTab === 'gastos_pers' ? 'Pessoal' : 'Loja'))} />
+                  <ExtratoGastos 
+                    lista={gastos.filter(g => g.tipo === (activeTab === 'gastos_pers' ? 'Pessoal' : 'Loja'))} 
+                    onExcluir={excluirRegistro}
+                  />
                 ) : (
                   <div className="text-center p-20 bg-white rounded-3xl border-2 border-dashed border-gray-200">
                     <p className="text-gray-400 font-medium italic">Nenhum gasto encontrado neste período.</p>

@@ -4,14 +4,14 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
 
   return (
-    // Aumentamos o z-index para garantir que fique acima de tudo
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+    // 1. Mudamos para items-start e p-4 para o modal ter margem e respirar
+    <div className="fixed inset-0 z-[999] flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
       
-      {/* 1. Mudamos para max-w-2xl: os novos formulários pedem mais largura
-          2. Adicionamos max-h e overflow-y: para o modal não "sumir" se a tela for pequena */}
+      {/* 2. O my-auto aqui ajuda a centralizar quando cabe, mas permite subir quando não cabe */}
       <div className="bg-white w-full max-w-2xl my-auto rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
         
-        <div className="flex justify-between items-center p-8 border-b border-gray-50 bg-white">
+        {/* 3. Cabeçalho fixo (sticky) para o X nunca sumir ao rolar */}
+        <div className="flex justify-between items-center p-8 border-b border-gray-50 bg-white sticky top-0 z-20">
           <h3 className="text-xl font-black text-gray-800 uppercase tracking-tighter">{title}</h3>
           <button 
             onClick={onClose} 
@@ -21,8 +21,8 @@ const Modal = ({ isOpen, onClose, title, children }) => {
           </button>
         </div>
 
-        {/* 3. Colocamos um limite de altura e scroll interno para segurança */}
-        <div className="p-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        {/* 4. Conteúdo: removemos o max-h fixo aqui e deixamos o container de fora (item 1) resolver o scroll da tela inteira */}
+        <div className="p-8">
           {children}
         </div>
       </div>
