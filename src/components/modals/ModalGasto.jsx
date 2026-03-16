@@ -6,14 +6,18 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
   const [tipo, setTipo] = useState(tipoPadrao || 'Loja');
   const [favorecido, setFavorecido] = useState('');
   const [categoria, setCategoria] = useState('');
+  // 1. Novo estado para a data (Inicia com a data de hoje)
+  const [dataGasto, setDataGasto] = useState(new Date().toISOString().split('T')[0]);
   const [fornecedores, setFornecedores] = useState([]);
-  const [categoriasBD, setCategoriasBD] = useState([]); // Novo estado para categorias
+  const [categoriasBD, setCategoriasBD] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
       setTipo(tipoPadrao);
+      // Reseta para a data de hoje ao abrir o modal
+      setDataGasto(new Date().toISOString().split('T')[0]);
       buscarFornecedores();
-      buscarCategorias(); // Busca categorias do banco ao abrir
+      buscarCategorias();
     }
   }, [isOpen, tipoPadrao]);
 
@@ -30,7 +34,6 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
   const handleSalvar = async () => {
     if (!valor || !favorecido) return alert("Preencha o valor e o favorecido!");
 
-    // LÓGICA AUTOMÁTICA: Se o favorecido não existe, cadastra
     const existe = fornecedores.some(f => f.toLowerCase() === favorecido.toLowerCase());
     if (!existe) {
       await supabase.from('fornecedores').insert([{ nome: favorecido, tipo: tipo }]);
@@ -40,19 +43,20 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
       valor: parseFloat(valor),
       tipo,
       favorecido,
-      categoria: categoria || 'Outros', // Fallback caso não selecione
-      data: new Date().toISOString().split('T')[0]
+      categoria: categoria || 'Outros',
+      data: dataGasto // 2. Envia a data selecionada no input
     };
 
     onSalvar(dados);
     limparCampos();
-    onClose(); // Fecha o modal após salvar
+    onClose();
   };
 
   const limparCampos = () => {
     setValor('');
     setFavorecido('');
     setCategoria('');
+    setDataGasto(new Date().toISOString().split('T')[0]);
   };
 
   if (!isOpen) return null;
@@ -66,9 +70,21 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
         </div>
 
         <div className="p-8 space-y-5">
+          {/* Seletor de Tipo */}
           <div className="flex bg-gray-100 p-1 rounded-2xl">
             <button onClick={() => setTipo('Loja')} className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${tipo === 'Loja' ? 'bg-white shadow-sm text-red-600' : 'text-gray-400'}`}>LOJA</button>
             <button onClick={() => setTipo('Pessoal')} className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${tipo === 'Pessoal' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-400'}`}>PESSOAL</button>
+          </div>
+
+          {/* 3. CAMPO DE DATA (Adicionado aqui) */}
+          <div>
+            <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Data do Gasto/Pagamento</label>
+            <input 
+              type="date"
+              className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-slate-800 font-bold"
+              value={dataGasto}
+              onChange={(e) => setDataGasto(e.target.value)}
+            />
           </div>
 
           <div>
@@ -105,7 +121,6 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
                 onChange={(e) => setCategoria(e.target.value)}
               >
                 <option value="">Outros</option>
-                {/* MAP DIRETO DO BANCO DE DADOS */}
                 {categoriasBD.map((cat, i) => (
                   <option key={i} value={cat.nome}>{cat.nome}</option>
                 ))}

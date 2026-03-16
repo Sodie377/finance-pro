@@ -17,11 +17,9 @@ const ImportadorVendas = ({ onSucesso }) => {
       
       const data = evt.target.result;
       const workbook = XLSX.read(data, { type: 'binary' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(worksheet);
+      const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
 
-      setProgresso('Agrupando linhas...');
+      setProgresso('Agrupando dados...');
 
       const agrupadoPorData = rows.reduce((acc, linha) => {
         const dataOriginal = linha.DATA;
@@ -37,54 +35,39 @@ const ImportadorVendas = ({ onSucesso }) => {
             if (partes.length !== 3) return acc;
             dataFormatada = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
           }
-          if (isNaN(new Date(dataFormatada).getTime()) || dataFormatada.includes('NaN')) return acc;
         } catch (e) { return acc; }
 
-        // CORREÇÃO AQUI: Adicionado 'bolos: 0' no objeto inicial
         if (!acc[dataFormatada]) {
           acc[dataFormatada] = {
             data_referencia: dataFormatada,
             dinheiro: 0, debito: 0, credito: 0, pix: 0, 
             pix_ecommerce: 0, voucher: 0, ifood: 0, keeta: 0,
-            bolos: 0 
+            bolos: 0,
+            valor_bruto: 0 // Inicia o bruto oficial
           };
         }
 
         const tipo = String(linha['TIPO DE VENDA'] || '').toUpperCase().trim();
         let valorRaw = String(linha.VALOR || '').replace('R$', '').replace(/\s/g, '').trim();
-        
         if (valorRaw === '' || valorRaw === '-') return acc;
 
-        let valor = 0;
-        if (valorRaw.includes(',') && valorRaw.includes('.')) {
-          valor = parseFloat(valorRaw.replace(/\./g, '').replace(',', '.'));
-        } else if (valorRaw.includes(',')) {
-          valor = parseFloat(valorRaw.replace(',', '.'));
-        } else {
-          valor = parseFloat(valorRaw);
-        }
+        let valor = parseFloat(valorRaw.replace(/\./g, '').replace(',', '.')) || 0;
         
-        if (isNaN(valor)) valor = 0;
-
-        // MAPEAMENTO DOS TIPOS
+        // MAPEAMENTO E CÁLCULO DO BRUTO OFICIAL
         if (tipo.includes('BOLOS')) {
           acc[dataFormatada].bolos += valor;
-        } else if (tipo.includes('DINHEIRO')) {
-          acc[dataFormatada].dinheiro += valor;
-        } else if (tipo.includes('DÉBITO')) {
-          acc[dataFormatada].debito += valor;
-        } else if (tipo.includes('CRÉDITO')) {
-          acc[dataFormatada].credito += valor;
-        } else if (tipo.includes('PIX E-COMERCE')) {
-          acc[dataFormatada].pix_ecommerce += valor;
-        } else if (tipo.includes('PIX')) {
-          acc[dataFormatada].pix += valor;
-        } else if (tipo.includes('VR')) {
-          acc[dataFormatada].voucher += valor;
-        } else if (tipo.includes('IFOOD')) {
-          acc[dataFormatada].ifood += valor;
-        } else if (tipo.includes('KEETA')) {
-          acc[dataFormatada].keeta += valor;
+        } else {
+          // Se não é bolo, soma no valor_bruto (faturamento oficial da loja)
+          acc[dataFormatada].valor_bruto += valor;
+
+          if (tipo.includes('DINHEIRO')) acc[dataFormatada].dinheiro += valor;
+          else if (tipo.includes('DÉBITO')) acc[dataFormatada].debito += valor;
+          else if (tipo.includes('CRÉDITO')) acc[dataFormatada].credito += valor;
+          else if (tipo.includes('PIX E-COMERCE')) acc[dataFormatada].pix_ecommerce += valor;
+          else if (tipo.includes('PIX')) acc[dataFormatada].pix += valor;
+          else if (tipo.includes('VR')) acc[dataFormatada].voucher += valor;
+          else if (tipo.includes('IFOOD')) acc[dataFormatada].ifood += valor;
+          else if (tipo.includes('KEETA')) acc[dataFormatada].keeta += valor;
         }
 
         return acc;
@@ -98,12 +81,12 @@ const ImportadorVendas = ({ onSucesso }) => {
           const lote = listaParaInserir.slice(i, i + tamanhoLote);
           const { error } = await supabase.from('faturamento_diario').insert(lote);
           if (error) throw error;
-          setProgresso(`Enviado: ${Math.min(i + tamanhoLote, listaParaInserir.length)} dias`);
+          setProgresso(`Importado: ${Math.min(i + lote.length, listaParaInserir.length)} dias`);
         }
-        alert("🚀 Importação concluída com sucesso!");
+        alert("✅ Histórico de Vendas importado com sucesso!");
         if (onSucesso) onSucesso();
       } catch (error) {
-        alert("❌ Erro ao enviar: " + error.message);
+        alert("❌ Erro: " + error.message);
       } finally {
         setLoading(false);
         setProgresso('');
@@ -113,11 +96,13 @@ const ImportadorVendas = ({ onSucesso }) => {
   };
 
   return (
-    <div className="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-dashed border-emerald-200 text-center my-6">
-      <h3 className="text-lg font-black text-emerald-800 uppercase tracking-tighter mb-2">Importar Histórico de Vendas</h3>
-      <p className="text-sm text-emerald-600 mb-6 font-medium">Planilha de 2.500 linhas detectada. Agora com suporte a Bolos!</p>
-      <label className={`px-8 py-3 rounded-2xl font-bold cursor-pointer transition-all shadow-lg inline-block ${loading ? 'bg-gray-400 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
-        {loading ? progresso : 'Selecionar Arquivo Excel'}
+    <div className="bg-emerald-50 p-10 rounded-[3rem] border-4 border-dashed border-emerald-100 text-center my-8">
+      <div className="text-5xl mb-4">📈</div>
+      <h3 className="text-xl font-black text-emerald-900 uppercase tracking-tighter">Importar Planilha de Vendas</h3>
+      <p className="text-sm text-emerald-600 mb-8 font-bold uppercase tracking-widest opacity-60">Reconhece colunas: DATA, TIPO DE VENDA e VALOR</p>
+      
+      <label className={`px-12 py-5 rounded-[2rem] font-black cursor-pointer transition-all shadow-2xl inline-block uppercase text-xs tracking-widest ${loading ? 'bg-gray-400 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:scale-105 active:scale-95 shadow-emerald-200'}`}>
+        {loading ? progresso : 'Selecionar Arquivo XLSX'}
         <input type="file" accept=".xlsx, .xls" onChange={processarPlanilha} className="hidden" disabled={loading} />
       </label>
     </div>

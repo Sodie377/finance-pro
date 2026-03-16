@@ -36,11 +36,10 @@ function App() {
     let queryGastos = supabase.from('despesas').select('*').order('data', { ascending: false });
     const resTaxas = await supabase.from('taxas_cartao').select('*');
 
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    // Ajuste para pegar a data local correta sem problemas de fuso
+    const hojeStr = new Date().toLocaleDateString('en-CA'); // Gera YYYY-MM-DD
 
     if (filtro === 'hoje') {
-      const hojeStr = hoje.toISOString().split('T')[0];
       queryVendas = queryVendas.eq('data_referencia', hojeStr);
       queryGastos = queryGastos.eq('data', hojeStr);
     } else if (filtro === 'personalizado') {
@@ -48,12 +47,13 @@ function App() {
       queryGastos = queryGastos.gte('data', customDatas.inicio).lte('data', customDatas.fim);
     } else if (filtro === '7dias') {
       const seteDiasAtras = new Date();
-      seteDiasAtras.setDate(hoje.getDate() - 7);
-      const dataStr = seteDiasAtras.toISOString().split('T')[0];
+      seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+      const dataStr = seteDiasAtras.toLocaleDateString('en-CA');
       queryVendas = queryVendas.gte('data_referencia', dataStr);
       queryGastos = queryGastos.gte('data', dataStr);
     } else if (filtro === 'mes') {
-      const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+      const agora = new Date();
+      const primeiroDiaMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toLocaleDateString('en-CA');
       queryVendas = queryVendas.gte('data_referencia', primeiroDiaMes);
       queryGastos = queryGastos.gte('data', primeiroDiaMes);
     }
@@ -67,12 +67,10 @@ function App() {
 
   useEffect(() => { atualizarDados(); }, [filtro, customDatas]);
 
-  // LÓGICA DE CÁLCULO LÍQUIDO AJUSTADA PARA VÍNCULOS
   const calcularTotalLiquido = () => {
     return vendas.reduce((accTotal, dia) => {
       let liquidoDia = 0;
       
-      // Lista exata das chaves que usamos no banco de dados e no cadastro de vendas
       const camposVenda = [
         'dinheiro', 'debito', 'credito', 'pix', 
         'pix_ecommerce', 'voucher', 'ifood', 'keeta', 'bolos'
@@ -80,11 +78,11 @@ function App() {
 
       camposVenda.forEach(campo => {
         const valorBruto = dia[campo] || 0;
-        
-        // BUSCA A TAXA PELO VÍNCULO (ex: vinculo === 'debito')
         const conf = taxas.find(t => t.vinculo === campo);
 
-        if (conf && valorBruto > 0) {
+        // Só aplica taxa se houver configuração e o campo não for 'bolos' ou 'dinheiro'
+        // (Assumindo que bolos e dinheiro são sempre 100% líquidos)
+        if (conf && valorBruto > 0 && campo !== 'bolos' && campo !== 'dinheiro') {
           const desconto = (valorBruto * (conf.taxa_percentual / 100)) + (conf.taxa_fixa || 0);
           liquidoDia += (valorBruto - desconto);
         } else {
@@ -107,7 +105,8 @@ function App() {
   const totalLiquido = calcularTotalLiquido();
   const totalLoja = gastos.filter(g => g.tipo === 'Loja').reduce((acc, g) => acc + (g.valor || 0), 0)
   const totalPessoal = gastos.filter(g => g.tipo === 'Pessoal').reduce((acc, g) => acc + (g.valor || 0), 0)
-  const lucroReal = totalLiquido - totalLoja - totalPessoal
+  const lucroReal = totalLiquido - totalLoja // Lucro da empresa (sem tirar o pessoal ainda)
+  const saldoFinal = totalLiquido - totalLoja - totalPessoal // O que sobra no bolso
 
   return (
     <div className="flex bg-gray-50 min-h-screen w-full font-sans text-gray-900">
