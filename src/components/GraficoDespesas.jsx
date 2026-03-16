@@ -38,64 +38,57 @@ const GraficoDespesas = ({ gastos }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
       
-      {/* CARD PIZZA - DISTRIBUIÇÃO */}
-      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+      {/* CARD PIZZA */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 h-[350px]">
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 text-center">Distribuição de Gastos</h3>
-        <div style={{ width: '100%', height: 250 }}>
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie
-                data={dadosPizza}
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {dadosPizza.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-              />
-              <Legend verticalAlign="bottom" height={36}/>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+          <PieChart>
+            <Pie
+              data={dadosPizza}
+              innerRadius={60}
+              outerRadius={80}
+              paddingAngle={5}
+              dataKey="value"
+            >
+              {dadosPizza.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip 
+              contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+            />
+            <Legend verticalAlign="bottom" height={36}/>
+          </PieChart>
+        </ResponsiveContainer>
       </div>
 
-      {/* CARD BARRA - CATEGORIAS (Ajustado para não cortar nome) */}
-      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+      {/* CARD BARRA */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 h-[350px]">
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 text-center">Top Gastos por Categoria</h3>
-        <div style={{ width: '100%', height: 250 }}>
-          <ResponsiveContainer>
-            <BarChart 
-              data={dadosBarras} 
-              layout="vertical" 
-              margin={{ top: 0, right: 30, left: 40, bottom: 0 }} // Margem esquerda maior para o texto
-            >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-              <XAxis type="number" hide />
-              <YAxis 
-                dataKey="categoria" 
-                type="category" 
-                axisLine={false} 
-                tickLine={false} 
-                width={80} // Largura fixa para o nome da categoria não sumir
-                tick={{fontSize: 10, fontWeight: 'bold', fill: '#64748b'}} 
-              />
-              <Tooltip 
-                cursor={{fill: 'transparent'}}
-                contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                formatter={(value) => `R$ ${Number(value).toFixed(2)}`}
-              />
-              <Bar dataKey="valor" fill="#334155" radius={[0, 10, 10, 0]} barSize={15} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+          <BarChart data={dadosBarras} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+            <XAxis type="number" hide />
+            <YAxis 
+              dataKey="categoria" 
+              type="category" 
+              axisLine={false} 
+              tickLine={false} 
+              width={80} 
+              tick={{fontSize: 10, fontWeight: 'bold', fill: '#64748b'}} 
+            />
+            <Tooltip 
+              cursor={{fill: 'transparent'}}
+              contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              formatter={(value) => `R$ ${Number(value).toFixed(2)}`}
+            />
+            <Bar dataKey="valor" fill="#334155" radius={[0, 10, 10, 0]} barSize={15} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
+
   );
 };
 
