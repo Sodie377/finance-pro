@@ -15,7 +15,7 @@ import ImportadorVendas from './components/ImportadorVendas'
 import ImportadorGastos from './components/ImportadorGastos'
 import ConfigCategorias from './components/ConfigCategorias'
 import Configuracoes from './components/Configuracoes'
-import FechamentoCaixa from './components/FechamentoCaixa' // <-- 1. NOVO IMPORT
+import FechamentoCaixa from './components/FechamentoCaixa' 
 
 function App() {
   const [activeTab, setActiveTab] = useState('dash')
@@ -114,16 +114,16 @@ function App() {
       
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-10 transition-all w-full overflow-x-hidden">
         
-        {/* 2. RENDERIZAÇÃO DA TELA DE FECHAMENTO */}
+        {/* TELA DE FECHAMENTO DE CAIXA */}
         {activeTab === 'fechamento' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-8">
               <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800">Fechamento de Caixa</h1>
-              <p className="text-slate-400 font-medium">Siga as abas para realizar a conferência detalhada.</p>
+              <p className="text-slate-400 font-medium">Conferência detalhada e conciliação de PDV.</p>
             </div>
             <FechamentoCaixa onSucesso={() => {
               atualizarDados();
-              setActiveTab('dash'); // Volta para o dashboard após salvar
+              setActiveTab('dash'); 
             }} />
           </div>
         )}
@@ -143,23 +143,48 @@ function App() {
           </div>
         )}
 
-        {/* 3. CONDIÇÃO PARA NÃO MOSTRAR DASHBOARD QUANDO ESTIVER NO FECHAMENTO */}
+        {/* RENDERIZAÇÃO DAS ABAS PRINCIPAIS (DASH, VENDAS E GASTOS) */}
         {activeTab !== 'taxas' && activeTab !== 'relatorios' && activeTab !== 'fornecedores' && activeTab !== 'fechamento' && (
           <>
             <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
               <div className="text-center md:text-left">
                 <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Visão Geral</p>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tighter">
-                  {activeTab === 'dash' ? 'DASHBOARD' : activeTab === 'vendas' ? 'VENDAS' : 'EXTRATO DE GASTOS'}
+                  {activeTab === 'dash' ? 'DASHBOARD' : activeTab === 'vendas' ? 'VENDAS' : activeTab === 'gastos_biz' ? 'GASTOS LOJA' : 'GASTOS CASA'}
                 </h2>
               </div>
               <div className="flex gap-4 w-full md:w-auto">
-                <button onClick={() => setIsModalVendaOpen(true)} className="flex-1 md:flex-none bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Venda</button>
-                <button onClick={() => setIsModalGastoOpen(true)} className="flex-1 md:flex-none bg-red-500 text-white px-6 py-3 rounded-2xl font-bold shadow-lg">- Gasto</button>
+                <button onClick={() => setIsModalVendaOpen(true)} className="flex-1 md:flex-none bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-emerald-200">+ Venda</button>
+                <button onClick={() => setIsModalGastoOpen(true)} className="flex-1 md:flex-none bg-red-500 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-red-200">- Gasto</button>
               </div>
             </div>
 
             <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
+
+            {/* RESTAURADO: CARD DE TOTAL DO PERÍODO ESPECÍFICO */}
+            {activeTab !== 'dash' && (
+              <div className="mb-6 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className={`p-6 rounded-[2.5rem] shadow-sm border-l-8 flex items-center justify-between ${
+                  activeTab === 'vendas' ? 'bg-emerald-50 border-emerald-500' : 
+                  activeTab === 'gastos_biz' ? 'bg-red-50 border-red-500' : 'bg-purple-50 border-purple-500'
+                }`}>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">
+                      Total do Período ({activeTab === 'vendas' ? 'Faturamento Bruto' : 'Despesas Totais'})
+                    </p>
+                    <p className={`text-3xl font-black font-mono ${
+                      activeTab === 'vendas' ? 'text-emerald-700' : 
+                      activeTab === 'gastos_biz' ? 'text-red-700' : 'text-purple-700'
+                    }`}>
+                      {activeTab === 'vendas' ? formatarMoeda(totalBruto) : activeTab === 'gastos_biz' ? formatarMoeda(totalLoja) : formatarMoeda(totalPessoal)}
+                    </p>
+                  </div>
+                  <div className="text-4xl opacity-20">
+                    {activeTab === 'vendas' ? '💰' : activeTab === 'gastos_biz' ? '🏢' : '🏠'}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {activeTab === 'dash' && (
               <>
@@ -195,7 +220,10 @@ function App() {
             
             {(activeTab === 'gastos_biz' || activeTab === 'gastos_pers') && (
               <div className="space-y-4">
-                <ExtratoGastos lista={gastos.filter(g => g.tipo === (activeTab === 'gastos_pers' ? 'Pessoal' : 'Loja'))} onExcluir={excluirRegistro} />
+                <ExtratoGastos 
+                   lista={gastos.filter(g => g.tipo === (activeTab === 'gastos_pers' ? 'Pessoal' : 'Loja'))} 
+                   onExcluir={excluirRegistro} 
+                />
               </div>
             )}
           </>
