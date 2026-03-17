@@ -63,6 +63,9 @@ const FechamentoCaixa = ({ onSucesso }) => {
 
   const totalRealComBolos = totalSistema + Number(cartoes.bolos);
   const noCaixaSobrou = totalDinheiroContado - (Number(dinheiro.retirado) || 0);
+  
+  // TOTAL LÍQUIDO (O que efetivamente entrou excluindo o que ficou no caixa)
+  const totalLiquidoEntrada = totalRealComBolos - noCaixaSobrou;
 
   // RELATÓRIO WHATSAPP
   const gerarRelatorioWhatsApp = () => {
@@ -87,8 +90,13 @@ const FechamentoCaixa = ({ onSucesso }) => {
 
 ---------------------------------------
 *💸 GAVETA (FISICO)*
-Sangria: ${formatarMoeda(Number(dinheiro.retirado))}
-*✅ SOBROU NO CAIXA: ${formatarMoeda(noCaixaSobrou)}*
+🔹 Sangria/Retirada: ${formatarMoeda(Number(dinheiro.retirado))}
+🔹 Sobrou no Caixa: ${formatarMoeda(noCaixaSobrou)}
+
+---------------------------------------
+*💵 TOTAL LÍQUIDO ENTRADA:*
+*${formatarMoeda(totalLiquidoEntrada)}*
+_(Total Real Final - Sobrou Caixa)_
 
 ---------------------------------------
 _Enviado via Finance PRO_`;
@@ -138,13 +146,9 @@ _Enviado via Finance PRO_`;
               {Object.keys(dinheiro.moedas).map((m, i, arr) => (
                 <div key={m} className="flex justify-between bg-gray-50 p-3 rounded-xl">
                   <span className="text-xs font-bold text-gray-500">R$ {m}</span>
-                  <input 
-                    ref={el => inputsRef.current[`m-${m}`] = el}
-                    type="number" className="w-20 text-right font-bold bg-white border rounded p-1" 
-                    value={dinheiro.moedas[m]} 
+                  <input ref={el => inputsRef.current[`m-${m}`] = el} type="number" className="w-20 text-right font-bold bg-white border rounded p-1 outline-none focus:ring-2 focus:ring-emerald-500" value={dinheiro.moedas[m]} 
                     onChange={(e) => setDinheiro({...dinheiro, moedas: {...dinheiro.moedas, [m]: e.target.value}})} 
-                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `m-${arr[i+1]}` : 'n-2')}
-                  />
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `m-${arr[i+1]}` : 'n-2')} />
                 </div>
               ))}
             </section>
@@ -153,15 +157,15 @@ _Enviado via Finance PRO_`;
               {Object.keys(dinheiro.notas).map((n, i, arr) => (
                 <div key={n} className="flex justify-between bg-gray-50 p-3 rounded-xl">
                   <span className="text-xs font-bold text-gray-500">R$ {n},00</span>
-                  <input 
-                    ref={el => inputsRef.current[`n-${n}`] = el}
-                    type="number" className="w-20 text-right font-bold bg-white border rounded p-1" 
-                    value={dinheiro.notas[n]} 
+                  <input ref={el => inputsRef.current[`n-${n}`] = el} type="number" className="w-20 text-right font-bold bg-white border rounded p-1 outline-none focus:ring-2 focus:ring-emerald-500" value={dinheiro.notas[n]} 
                     onChange={(e) => setDinheiro({...dinheiro, notas: {...dinheiro.notas, [n]: e.target.value}})} 
-                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `n-${arr[i+1]}` : '')}
-                  />
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `n-${arr[i+1]}` : 'sangria-input')} />
                 </div>
               ))}
+              <div className="pt-4">
+                <label className="text-[9px] font-black text-orange-600 uppercase ml-2">Retirada (Sangria)</label>
+                <input ref={el => inputsRef.current['sangria-input'] = el} type="number" className="w-full p-3 bg-orange-50 border border-orange-100 rounded-xl font-bold text-orange-700 outline-none focus:ring-2 focus:ring-orange-500" value={dinheiro.retirado} onChange={(e) => setDinheiro({...dinheiro, retirado: e.target.value})} />
+              </div>
             </section>
           </div>
         )}
@@ -174,13 +178,9 @@ _Enviado via Finance PRO_`;
               {Object.keys(cartoes.debito).map((d, i, arr) => (
                 <div key={d} className="flex justify-between bg-gray-50 p-2 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase">{d}</span>
-                  <input 
-                    ref={el => inputsRef.current[`d-${d}`] = el}
-                    type="number" className="w-24 text-right font-bold outline-none bg-transparent" 
-                    value={cartoes.debito[d]} 
+                  <input ref={el => inputsRef.current[`d-${d}`] = el} type="number" className="w-24 text-right font-bold outline-none bg-transparent" value={cartoes.debito[d]} 
                     onChange={(e) => setCartoes({...cartoes, debito: {...cartoes.debito, [d]: e.target.value}})} 
-                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `d-${arr[i+1]}` : 'c-visa')}
-                  />
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `d-${arr[i+1]}` : 'c-visa')} />
                 </div>
               ))}
             </section>
@@ -189,13 +189,9 @@ _Enviado via Finance PRO_`;
               {Object.keys(cartoes.credito).map((c, i, arr) => (
                 <div key={c} className="flex justify-between bg-gray-50 p-2 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase">{c}</span>
-                  <input 
-                    ref={el => inputsRef.current[`c-${c}`] = el}
-                    type="number" className="w-24 text-right font-bold outline-none bg-transparent" 
-                    value={cartoes.credito[c]} 
+                  <input ref={el => inputsRef.current[`c-${c}`] = el} type="number" className="w-24 text-right font-bold outline-none bg-transparent" value={cartoes.credito[c]} 
                     onChange={(e) => setCartoes({...cartoes, credito: {...cartoes.credito, [c]: e.target.value}})} 
-                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `c-${arr[i+1]}` : 'pix-loja')}
-                  />
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `c-${arr[i+1]}` : 'ifood-0')} />
                 </div>
               ))}
             </section>
@@ -215,7 +211,7 @@ _Enviado via Finance PRO_`;
                         onKeyDown={(e) => handleKeyDown(e, `ifood-${i+1}`)} />
                     ))}
                   </div>
-                  <button onClick={() => adicionarPedido('ifood')} className="w-full mt-2 py-2 bg-red-100 text-red-600 rounded-xl font-black text-[9px] uppercase">+ Pedido iFood</button>
+                  <button onClick={() => adicionarPedido('ifood')} className="w-full mt-2 py-2 bg-red-100 text-red-600 rounded-xl font-black text-[9px] uppercase">+ iFood</button>
                 </div>
                 <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100">
                   <h4 className="text-[10px] font-black text-orange-600 mb-4 uppercase">Keeta ({formatarMoeda(totalKeeta)})</h4>
@@ -226,11 +222,10 @@ _Enviado via Finance PRO_`;
                         onKeyDown={(e) => handleKeyDown(e, `keeta-${i+1}`)} />
                     ))}
                   </div>
-                  <button onClick={() => adicionarPedido('keeta')} className="w-full mt-2 py-2 bg-orange-100 text-orange-600 rounded-xl font-black text-[9px] uppercase">+ Pedido Keeta</button>
+                  <button onClick={() => adicionarPedido('keeta')} className="w-full mt-2 py-2 bg-orange-100 text-orange-600 rounded-xl font-black text-[9px] uppercase">+ Keeta</button>
                 </div>
              </div>
 
-             {/* CAMPOS RECUPERADOS: Pix e Voucher */}
              <div className="bg-cyan-50 p-6 rounded-[2rem] border border-cyan-100 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                    <label className="text-[9px] font-black text-cyan-600 uppercase ml-2">Pix Loja</label>
@@ -242,16 +237,16 @@ _Enviado via Finance PRO_`;
                 </div>
                 <div>
                    <label className="text-[9px] font-black text-cyan-600 uppercase ml-2">VR / Voucher</label>
-                   <input ref={el => inputsRef.current['voucher'] = el} type="number" className="w-full p-3 rounded-xl border font-bold outline-none" value={cartoes.voucher} onChange={(e) => setCartoes({...cartoes, voucher: e.target.value})} onKeyDown={(e) => handleKeyDown(e, '')} />
+                   <input ref={el => inputsRef.current['voucher'] = el} type="number" className="w-full p-3 rounded-xl border font-bold outline-none" value={cartoes.voucher} onChange={(e) => setCartoes({...cartoes, voucher: e.target.value})} />
                 </div>
              </div>
           </div>
         )}
 
+        {/* ABA RESUMO */}
         {abaAtiva === 'resumo' && (
           <div className="space-y-6 animate-in zoom-in">
             <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 mb-6">Resumo Final do Sistema</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 border-b border-slate-700 pb-6 mb-6">
                 <div><p className="text-[8px] uppercase text-slate-500 font-bold">Débito</p><p className="font-bold">{formatarMoeda(totalDebito)}</p></div>
                 <div><p className="text-[8px] uppercase text-slate-500 font-bold">Crédito</p><p className="font-bold">{formatarMoeda(totalCredito)}</p></div>
@@ -264,13 +259,13 @@ _Enviado via Finance PRO_`;
               </div>
 
               <div className="flex justify-between items-center mb-8">
-                <span className="text-xs font-black uppercase tracking-widest">Total Sistema:</span>
+                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Total Sistema:</span>
                 <span className="text-3xl font-black text-emerald-400">{formatarMoeda(totalSistema)}</span>
               </div>
 
               <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-purple-400 uppercase">🧁 Bolos (Não Declarados):</span>
+                  <span className="text-xs font-bold text-purple-400 uppercase">🧁 Bolos:</span>
                   <input type="number" className="bg-transparent text-right font-black text-purple-400 outline-none w-24 text-xl" value={cartoes.bolos} onChange={(e) => setCartoes({...cartoes, bolos: e.target.value})} placeholder="0,00" />
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t border-slate-700">
@@ -278,15 +273,20 @@ _Enviado via Finance PRO_`;
                   <span className="text-3xl font-black text-white">{formatarMoeda(totalRealComBolos)}</span>
                 </div>
               </div>
+              
+              <div className="mt-4 bg-emerald-500/10 p-5 rounded-3xl border border-emerald-500/20 flex justify-between items-center">
+                <span className="text-xs font-black text-emerald-500 uppercase tracking-widest">💵 Total Líquido Entrada:</span>
+                <span className="text-3xl font-black text-emerald-500">{formatarMoeda(totalLiquidoEntrada)}</span>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-               <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 flex justify-between items-center shadow-sm">
-                  <span className="text-[10px] font-black text-orange-600 uppercase">Sangria/Retirada:</span>
-                  <input type="number" className="bg-transparent text-right font-black text-orange-700 outline-none w-20" value={dinheiro.retirado} onChange={(e) => setDinheiro({...dinheiro, retirado: e.target.value})} />
+               <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 flex justify-between items-center">
+                  <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Sangria:</span>
+                  <span className="font-black text-orange-700">{formatarMoeda(Number(dinheiro.retirado))}</span>
                </div>
                <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center shadow-sm">
-                  <span className="text-[10px] font-black text-emerald-600 uppercase">No Caixa Sobrou:</span>
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">No Caixa Sobrou:</span>
                   <span className="font-black text-emerald-700">{formatarMoeda(noCaixaSobrou)}</span>
                </div>
             </div>
