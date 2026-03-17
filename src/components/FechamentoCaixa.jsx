@@ -32,17 +32,24 @@ const FechamentoCaixa = ({ onSucesso }) => {
   const somarQtd = (obj) => Object.entries(obj).reduce((acc, [v, q]) => acc + (parseFloat(v) * (Number(q) || 0)), 0);
   const somarVal = (obj) => Object.values(obj).reduce((acc, v) => acc + (Number(v) || 0), 0);
 
-  const totalDinheiroBruto = somarQtd(dinheiro.moedas) + somarQtd(dinheiro.notas);
+  const totalDinheiroContado = somarQtd(dinheiro.moedas) + somarQtd(dinheiro.notas);
   const totalDebito = somarVal(cartoes.debito);
   const totalCredito = somarVal(cartoes.credito);
   
-  // TOTAL SISTEMA (Exatamente a ordem da sua planilha)
+  // O VALOR DE DINHEIRO VENDIDO (Faturamento) é o Total Contado + o que foi Retirado? 
+  // Ou o Dinheiro Contado já é o faturamento? 
+  // Baseado no seu erro, vamos considerar que o Faturamento em Dinheiro é o Total Contado.
+  const faturamentoDinheiro = totalDinheiroContado;
+
+  // TOTAL SISTEMA
   const totalSistema = totalDebito + totalCredito + Number(cartoes.pix_ecommerce) + 
                        Number(cartoes.voucher) + Number(apps.pix_loja) + 
-                       Number(apps.keeta.valor) + Number(apps.ifood.valor) + totalDinheiroBruto;
+                       Number(apps.keeta.valor) + Number(apps.ifood.valor) + faturamentoDinheiro;
 
   const totalRealComBolos = totalSistema + Number(cartoes.bolos);
-  const noCaixaSobrou = totalDinheiroBruto - (Number(dinheiro.retirado) || 0);
+  
+  // MOVIMENTAÇÃO FÍSICA (O que sobrou no caixa após a retirada)
+  const noCaixaSobrou = totalDinheiroContado - (Number(dinheiro.retirado) || 0);
 
   // FUNÇÃO RELATÓRIO WHATSAPP
   const gerarRelatorioWhatsApp = () => {
@@ -57,7 +64,7 @@ const FechamentoCaixa = ({ onSucesso }) => {
 🔹 Pix Loja: ${formatarMoeda(Number(apps.pix_loja))}
 🔹 Keeta: ${formatarMoeda(Number(apps.keeta.valor))}
 🔹 iFood: ${formatarMoeda(Number(apps.ifood.valor))}
-🔹 Dinheiro (Total): ${formatarMoeda(totalDinheiroBruto)}
+🔹 Dinheiro (Venda): ${formatarMoeda(faturamentoDinheiro)}
 *💰 TOTAL SISTEMA: ${formatarMoeda(totalSistema)}*
 
 ---------------------------------------
@@ -66,12 +73,12 @@ const FechamentoCaixa = ({ onSucesso }) => {
 *🚀 TOTAL REAL (SIST + BOLOS): ${formatarMoeda(totalRealComBolos)}*
 
 ---------------------------------------
-*💸 MOVIMENTAÇÃO FÍSICA*
-Retirada/Sangria: ${formatarMoeda(Number(dinheiro.retirado))}
+*💸 MOVIMENTAÇÃO FÍSICA (GAVETA)*
+Total Contado: ${formatarMoeda(totalDinheiroContado)}
+Sangria/Retirada: ${formatarMoeda(Number(dinheiro.retirado))}
 *✅ SOBROU NO CAIXA: ${formatarMoeda(noCaixaSobrou)}*
 
 ---------------------------------------
-👤 Resp: Flavio Daniel
 _Enviado via Finance PRO_`;
 
     navigator.clipboard.writeText(msg);
@@ -81,10 +88,10 @@ _Enviado via Finance PRO_`;
   const salvarNoBanco = async () => {
     const dados = {
       data_referencia: new Date().toISOString().split('T')[0],
-      dinheiro: totalDinheiroBruto,
+      dinheiro: faturamentoDinheiro,
       debito: totalDebito,
       credito: totalCredito,
-      pix: Number(apps.pix_lo_ja),
+      pix: Number(apps.pix_loja),
       pix_ecommerce: Number(cartoes.pix_ecommerce),
       voucher: Number(cartoes.voucher),
       ifood: Number(apps.ifood.valor),
@@ -191,7 +198,7 @@ _Enviado via Finance PRO_`;
           </div>
         )}
 
-        {/* ABA RESUMO (CONFORME SOLICITADO) */}
+        {/* ABA RESUMO */}
         {abaAtiva === 'resumo' && (
           <div className="space-y-6 animate-in zoom-in">
             <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl">
@@ -204,7 +211,7 @@ _Enviado via Finance PRO_`;
                 <div><p className="text-[8px] uppercase text-slate-500 font-bold">Pix Loja</p><p className="font-bold">{formatarMoeda(Number(apps.pix_loja))}</p></div>
                 <div><p className="text-[8px] uppercase text-slate-500 font-bold">Keeta</p><p className="font-bold">{formatarMoeda(Number(apps.keeta.valor))}</p></div>
                 <div><p className="text-[8px] uppercase text-slate-500 font-bold">iFood</p><p className="font-bold">{formatarMoeda(Number(apps.ifood.valor))}</p></div>
-                <div><p className="text-[8px] uppercase text-slate-500 font-bold">Dinheiro</p><p className="font-bold text-emerald-400">{formatarMoeda(totalDinheiroBruto)}</p></div>
+                <div><p className="text-[8px] uppercase text-slate-500 font-bold">Dinheiro (Venda)</p><p className="font-bold text-emerald-400">{formatarMoeda(faturamentoDinheiro)}</p></div>
               </div>
 
               <div className="flex justify-between items-center mb-8">
@@ -225,11 +232,11 @@ _Enviado via Finance PRO_`;
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-               <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 flex justify-between items-center">
+               <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 flex justify-between items-center shadow-sm">
                   <span className="text-[10px] font-black text-orange-600 uppercase">Sangria/Retirada:</span>
                   <input type="number" className="bg-transparent text-right font-black text-orange-700 outline-none w-20" value={dinheiro.retirado} onChange={(e) => setDinheiro({...dinheiro, retirado: e.target.value})} />
                </div>
-               <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center">
+               <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center shadow-sm">
                   <span className="text-[10px] font-black text-emerald-600 uppercase">No Caixa Sobrou:</span>
                   <span className="font-black text-emerald-700">{formatarMoeda(noCaixaSobrou)}</span>
                </div>
