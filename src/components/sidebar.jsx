@@ -5,15 +5,16 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const menu = [
-    { id: 'dash', label: 'Dashboard', icon: '📊' },
-    { id: 'vendas', label: 'Vendas', icon: '💰' },
-    { id: 'gastos_biz', label: 'Gastos Loja', icon: '🏢' },
-    { id: 'gastos_pers', label: 'Gastos Casa', icon: '🏠' },
-    { id: 'fornecedores', label: 'Fornecedores', icon: '🤝' },
-    { id: 'taxas', label: 'Taxas', icon: '⚙️' },
-    { id: 'fechamento', label: 'Fechamento', icon: '📦' }, // Novo item acima de Relatórios
-    { id: 'relatorios', label: 'Relatórios', icon: '📋' }
-  ];
+  { id: 'dash', label: 'Dashboard', icon: '📊' },
+  { id: 'vendas', label: 'Vendas', icon: '💰' },
+  { id: 'gastos_biz', label: 'Gastos Loja', icon: '🏢' },
+  { id: 'gastos_pers', label: 'Gastos Casa', icon: '🏠' },
+  { id: 'compras', label: 'Compras', icon: '🛒' }, // <-- NOVO
+  { id: 'fornecedores', label: 'Fornecedores', icon: '🤝' },
+  { id: 'taxas', label: 'Taxas', icon: '⚙️' },
+  { id: 'fechamento', label: 'Fechamento', icon: '📦' },
+  { id: 'relatorios', label: 'Relatórios', icon: '📋' }
+];
 
   // Função para mudar de aba e fechar o menu no celular
   const handleTabChange = (id) => {

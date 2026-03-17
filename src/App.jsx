@@ -16,6 +16,7 @@ import ImportadorGastos from './components/ImportadorGastos'
 import ConfigCategorias from './components/ConfigCategorias'
 import Configuracoes from './components/Configuracoes'
 import FechamentoCaixa from './components/FechamentoCaixa' 
+import ListaCompras from './components/ListaCompras'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dash')
@@ -129,6 +130,9 @@ function App() {
 
         {activeTab === 'taxas' && <Configuracoes />}
         {activeTab === 'fornecedores' && <CadastroFornecedores />}
+        
+        {/* NOVA LINHA ADICIONADA AQUI ABAIXO */}
+        {activeTab === 'compras' && <ListaCompras />}
 
         {activeTab === 'relatorios' && (
           <div className="space-y-6">
@@ -142,12 +146,12 @@ function App() {
           </div>
         )}
 
-        {activeTab !== 'taxas' && activeTab !== 'relatorios' && activeTab !== 'fornecedores' && activeTab !== 'fechamento' && (
+        {activeTab !== 'taxas' && activeTab !== 'relatorios' && activeTab !== 'fornecedores' && activeTab !== 'fechamento' && activeTab !== 'compras' && (
           <>
             <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
               <div className="text-center md:text-left">
                 <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Visão Geral</p>
-                <h2 className="text-3xl font-black text-slate-800 tracking-tighter">
+                <h2 className="text-2xl font-black text-slate-800 tracking-tighter">
                   {activeTab === 'dash' ? 'DASHBOARD' : activeTab === 'vendas' ? 'VENDAS' : activeTab === 'gastos_biz' ? 'GASTOS LOJA' : 'GASTOS CASA'}
                 </h2>
               </div>
@@ -159,7 +163,6 @@ function App() {
 
             <FiltroData filtro={filtro} setFiltro={setFiltro} customDatas={customDatas} setCustomDatas={setCustomDatas} />
 
-            {/* CARD DE TOTAL EM DESTAQUE - REINSERIDO E AMPLIADO */}
             {activeTab !== 'dash' && (
               <div className="mb-8 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className={`p-8 rounded-[2.5rem] shadow-xl border-l-[12px] flex items-center justify-between bg-white ${
