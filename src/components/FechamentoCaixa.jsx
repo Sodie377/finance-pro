@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { supabase } from '../services/supabase';
 
 const FechamentoCaixa = ({ onSucesso }) => {
@@ -20,7 +20,7 @@ const FechamentoCaixa = ({ onSucesso }) => {
     bolos: ''
   });
 
-  // 3. ESTADO APPS (Modificado para lista de pedidos)
+  // 3. ESTADO APPS E PIX LOJA
   const [apps, setApps] = useState({
     ifood: [''], 
     keeta: [''],
@@ -55,7 +55,6 @@ const FechamentoCaixa = ({ onSucesso }) => {
   const totalIfood = somarLista(apps.ifood);
   const totalKeeta = somarLista(apps.keeta);
   
-  // O faturamento em dinheiro é o total contado na mesa
   const faturamentoDinheiro = totalDinheiroContado;
 
   const totalSistema = totalDebito + totalCredito + Number(cartoes.pix_ecommerce) + 
@@ -65,7 +64,7 @@ const FechamentoCaixa = ({ onSucesso }) => {
   const totalRealComBolos = totalSistema + Number(cartoes.bolos);
   const noCaixaSobrou = totalDinheiroContado - (Number(dinheiro.retirado) || 0);
 
-  // RELATÓRIO WHATSAPP CORRIGIDO
+  // RELATÓRIO WHATSAPP
   const gerarRelatorioWhatsApp = () => {
     const data = new Date().toLocaleDateString('pt-BR');
     const msg = `*📋 FECHAMENTO DE CAIXA - ${data}*
@@ -76,19 +75,19 @@ const FechamentoCaixa = ({ onSucesso }) => {
 🔹 Pix E-com: ${formatarMoeda(Number(cartoes.pix_ecommerce))}
 🔹 VR/Voucher: ${formatarMoeda(Number(cartoes.voucher))}
 🔹 Pix Loja: ${formatarMoeda(Number(apps.pix_loja))}
-🔹 Keeta (${apps.keeta.length} ped): ${formatarMoeda(totalKeeta)}
-🔹 iFood (${apps.ifood.length} ped): ${formatarMoeda(totalIfood)}
+🔹 Keeta: ${formatarMoeda(totalKeeta)}
+🔹 iFood: ${formatarMoeda(totalIfood)}
 🔹 Dinheiro (Venda): ${formatarMoeda(faturamentoDinheiro)}
 *💰 TOTAL SISTEMA: ${formatarMoeda(totalSistema)}*
 
 ---------------------------------------
 *🧁 NÃO DECLARADOS*
 🔹 Bolos: ${formatarMoeda(Number(cartoes.bolos))}
-*🚀 TOTAL REAL (SIST + BOLOS): ${formatarMoeda(totalRealComBolos)}*
+*🚀 TOTAL REAL FINAL: ${formatarMoeda(totalRealComBolos)}*
 
 ---------------------------------------
 *💸 GAVETA (FISICO)*
-Sangria/Retirada: ${formatarMoeda(Number(dinheiro.retirado))}
+Sangria: ${formatarMoeda(Number(dinheiro.retirado))}
 *✅ SOBROU NO CAIXA: ${formatarMoeda(noCaixaSobrou)}*
 
 ---------------------------------------
@@ -131,6 +130,7 @@ _Enviado via Finance PRO_`;
       </div>
 
       <div className="p-6 md:p-10">
+        {/* ABA DINHEIRO */}
         {abaAtiva === 'dinheiro' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in">
             <section className="space-y-2">
@@ -142,8 +142,8 @@ _Enviado via Finance PRO_`;
                     ref={el => inputsRef.current[`m-${m}`] = el}
                     type="number" className="w-20 text-right font-bold bg-white border rounded p-1" 
                     value={dinheiro.moedas[m]} 
-                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `m-${arr[i+1]}` : 'n-2')}
                     onChange={(e) => setDinheiro({...dinheiro, moedas: {...dinheiro.moedas, [m]: e.target.value}})} 
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `m-${arr[i+1]}` : 'n-2')}
                   />
                 </div>
               ))}
@@ -157,8 +157,8 @@ _Enviado via Finance PRO_`;
                     ref={el => inputsRef.current[`n-${n}`] = el}
                     type="number" className="w-20 text-right font-bold bg-white border rounded p-1" 
                     value={dinheiro.notas[n]} 
-                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `n-${arr[i+1]}` : '')}
                     onChange={(e) => setDinheiro({...dinheiro, notas: {...dinheiro.notas, [n]: e.target.value}})} 
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `n-${arr[i+1]}` : '')}
                   />
                 </div>
               ))}
@@ -166,64 +166,85 @@ _Enviado via Finance PRO_`;
           </div>
         )}
 
+        {/* ABA CARTÕES */}
         {abaAtiva === 'cartoes' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in">
             <section className="space-y-1">
               <h4 className="text-[10px] font-black text-blue-500 uppercase mb-4 border-b pb-2 tracking-widest">🟦 Débito</h4>
-              {Object.keys(cartoes.debito).map((d) => (
+              {Object.keys(cartoes.debito).map((d, i, arr) => (
                 <div key={d} className="flex justify-between bg-gray-50 p-2 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase">{d}</span>
-                  <input type="number" className="w-24 text-right font-bold outline-none bg-transparent" value={cartoes.debito[d]} onChange={(e) => setCartoes({...cartoes, debito: {...cartoes.debito, [d]: e.target.value}})} />
+                  <input 
+                    ref={el => inputsRef.current[`d-${d}`] = el}
+                    type="number" className="w-24 text-right font-bold outline-none bg-transparent" 
+                    value={cartoes.debito[d]} 
+                    onChange={(e) => setCartoes({...cartoes, debito: {...cartoes.debito, [d]: e.target.value}})} 
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `d-${arr[i+1]}` : 'c-visa')}
+                  />
                 </div>
               ))}
             </section>
             <section className="space-y-1">
               <h4 className="text-[10px] font-black text-orange-500 uppercase mb-4 border-b pb-2 tracking-widest">🟧 Crédito</h4>
-              {Object.keys(cartoes.credito).map((c) => (
+              {Object.keys(cartoes.credito).map((c, i, arr) => (
                 <div key={c} className="flex justify-between bg-gray-50 p-2 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase">{c}</span>
-                  <input type="number" className="w-24 text-right font-bold outline-none bg-transparent" value={cartoes.credito[c]} onChange={(e) => setCartoes({...cartoes, credito: {...cartoes.credito, [c]: e.target.value}})} />
+                  <input 
+                    ref={el => inputsRef.current[`c-${c}`] = el}
+                    type="number" className="w-24 text-right font-bold outline-none bg-transparent" 
+                    value={cartoes.credito[c]} 
+                    onChange={(e) => setCartoes({...cartoes, credito: {...cartoes.credito, [c]: e.target.value}})} 
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `c-${arr[i+1]}` : 'pix-loja')}
+                  />
                 </div>
               ))}
             </section>
           </div>
         )}
 
+        {/* ABA APPS */}
         {abaAtiva === 'apps' && (
           <div className="space-y-6 animate-in fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100">
-                <h4 className="text-[10px] font-black text-red-600 uppercase mb-4 tracking-widest">🛵 iFood ({formatarMoeda(totalIfood)})</h4>
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-2 mb-4">
-                  {apps.ifood.map((v, i) => (
-                    <input 
-                      key={`ifood-${i}`} ref={el => inputsRef.current[`ifood-${i}`] = el}
-                      type="number" className="w-full p-3 rounded-xl border-none shadow-sm font-bold text-red-700 outline-none" 
-                      value={v} placeholder={`Pedido ${i+1}`}
-                      onChange={(e) => { const l = [...apps.ifood]; l[i] = e.target.value; setApps({...apps, ifood: l}) }}
-                      onKeyDown={(e) => handleKeyDown(e, `ifood-${i+1}`)}
-                    />
-                  ))}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100">
+                  <h4 className="text-[10px] font-black text-red-600 mb-4 uppercase">iFood ({formatarMoeda(totalIfood)})</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {apps.ifood.map((v, i) => (
+                      <input key={`ifood-${i}`} ref={el => inputsRef.current[`ifood-${i}`] = el} type="number" className="w-full p-3 rounded-xl border font-bold text-red-700 outline-none" value={v} placeholder={`Pedido ${i+1}`}
+                        onChange={(e) => { const l = [...apps.ifood]; l[i] = e.target.value; setApps({...apps, ifood: l}) }}
+                        onKeyDown={(e) => handleKeyDown(e, `ifood-${i+1}`)} />
+                    ))}
+                  </div>
+                  <button onClick={() => adicionarPedido('ifood')} className="w-full mt-2 py-2 bg-red-100 text-red-600 rounded-xl font-black text-[9px] uppercase">+ Pedido iFood</button>
                 </div>
-                <button onClick={() => adicionarPedido('ifood')} className="w-full py-2 bg-red-100 text-red-600 rounded-xl font-black text-[10px] uppercase">+ Pedido</button>
-              </div>
+                <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100">
+                  <h4 className="text-[10px] font-black text-orange-600 mb-4 uppercase">Keeta ({formatarMoeda(totalKeeta)})</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {apps.keeta.map((v, i) => (
+                      <input key={`keeta-${i}`} ref={el => inputsRef.current[`keeta-${i}`] = el} type="number" className="w-full p-3 rounded-xl border font-bold text-orange-700 outline-none" value={v} placeholder={`Pedido ${i+1}`}
+                        onChange={(e) => { const l = [...apps.keeta]; l[i] = e.target.value; setApps({...apps, keeta: l}) }}
+                        onKeyDown={(e) => handleKeyDown(e, `keeta-${i+1}`)} />
+                    ))}
+                  </div>
+                  <button onClick={() => adicionarPedido('keeta')} className="w-full mt-2 py-2 bg-orange-100 text-orange-600 rounded-xl font-black text-[9px] uppercase">+ Pedido Keeta</button>
+                </div>
+             </div>
 
-              <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100">
-                <h4 className="text-[10px] font-black text-orange-600 uppercase mb-4 tracking-widest">🥡 Keeta ({formatarMoeda(totalKeeta)})</h4>
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-2 mb-4">
-                  {apps.keeta.map((v, i) => (
-                    <input 
-                      key={`keeta-${i}`} ref={el => inputsRef.current[`keeta-${i}`] = el}
-                      type="number" className="w-full p-3 rounded-xl border-none shadow-sm font-bold text-orange-700 outline-none" 
-                      value={v} placeholder={`Pedido ${i+1}`}
-                      onChange={(e) => { const l = [...apps.keeta]; l[i] = e.target.value; setApps({...apps, keeta: l}) }}
-                      onKeyDown={(e) => handleKeyDown(e, `keeta-${i+1}`)}
-                    />
-                  ))}
+             {/* CAMPOS RECUPERADOS: Pix e Voucher */}
+             <div className="bg-cyan-50 p-6 rounded-[2rem] border border-cyan-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                   <label className="text-[9px] font-black text-cyan-600 uppercase ml-2">Pix Loja</label>
+                   <input ref={el => inputsRef.current['pix-loja'] = el} type="number" className="w-full p-3 rounded-xl border font-bold outline-none" value={apps.pix_loja} onChange={(e) => setApps({...apps, pix_loja: e.target.value})} onKeyDown={(e) => handleKeyDown(e, 'pix-ecom')} />
                 </div>
-                <button onClick={() => adicionarPedido('keeta')} className="w-full py-2 bg-orange-100 text-orange-600 rounded-xl font-black text-[10px] uppercase">+ Pedido</button>
-              </div>
-            </div>
+                <div>
+                   <label className="text-[9px] font-black text-cyan-600 uppercase ml-2">Pix E-com</label>
+                   <input ref={el => inputsRef.current['pix-ecom'] = el} type="number" className="w-full p-3 rounded-xl border font-bold outline-none" value={cartoes.pix_ecommerce} onChange={(e) => setCartoes({...cartoes, pix_ecommerce: e.target.value})} onKeyDown={(e) => handleKeyDown(e, 'voucher')} />
+                </div>
+                <div>
+                   <label className="text-[9px] font-black text-cyan-600 uppercase ml-2">VR / Voucher</label>
+                   <input ref={el => inputsRef.current['voucher'] = el} type="number" className="w-full p-3 rounded-xl border font-bold outline-none" value={cartoes.voucher} onChange={(e) => setCartoes({...cartoes, voucher: e.target.value})} onKeyDown={(e) => handleKeyDown(e, '')} />
+                </div>
+             </div>
           </div>
         )}
 
@@ -260,11 +281,11 @@ _Enviado via Finance PRO_`;
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-               <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 flex justify-between items-center">
+               <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 flex justify-between items-center shadow-sm">
                   <span className="text-[10px] font-black text-orange-600 uppercase">Sangria/Retirada:</span>
                   <input type="number" className="bg-transparent text-right font-black text-orange-700 outline-none w-20" value={dinheiro.retirado} onChange={(e) => setDinheiro({...dinheiro, retirado: e.target.value})} />
                </div>
-               <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center">
+               <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center shadow-sm">
                   <span className="text-[10px] font-black text-emerald-600 uppercase">No Caixa Sobrou:</span>
                   <span className="font-black text-emerald-700">{formatarMoeda(noCaixaSobrou)}</span>
                </div>
