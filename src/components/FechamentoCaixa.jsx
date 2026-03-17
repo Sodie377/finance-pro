@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 
 const FechamentoCaixa = ({ onSucesso }) => {
@@ -20,38 +20,52 @@ const FechamentoCaixa = ({ onSucesso }) => {
     bolos: ''
   });
 
-  // 3. ESTADO APPS E PIX LOJA
+  // 3. ESTADO APPS (Modificado para lista de pedidos)
   const [apps, setApps] = useState({
-    ifood: { valor: '' },
-    keeta: { valor: '' },
+    ifood: [''], 
+    keeta: [''],
     pix_loja: ''
   });
+
+  // Referências para navegação por Enter
+  const inputsRef = useRef({});
+
+  // --- LÓGICA DE NAVEGAÇÃO ---
+  const handleKeyDown = (e, nextId) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const nextInput = inputsRef.current[nextId];
+      if (nextInput) nextInput.focus();
+    }
+  };
+
+  const adicionarPedido = (tipo) => {
+    setApps(prev => ({ ...prev, [tipo]: [...prev[tipo], ''] }));
+  };
 
   // --- CÁLCULOS ---
   const formatarMoeda = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
   const somarQtd = (obj) => Object.entries(obj).reduce((acc, [v, q]) => acc + (parseFloat(v) * (Number(q) || 0)), 0);
   const somarVal = (obj) => Object.values(obj).reduce((acc, v) => acc + (Number(v) || 0), 0);
+  const somarLista = (lista) => lista.reduce((acc, v) => acc + (Number(v) || 0), 0);
 
   const totalDinheiroContado = somarQtd(dinheiro.moedas) + somarQtd(dinheiro.notas);
   const totalDebito = somarVal(cartoes.debito);
   const totalCredito = somarVal(cartoes.credito);
+  const totalIfood = somarLista(apps.ifood);
+  const totalKeeta = somarLista(apps.keeta);
   
-  // O VALOR DE DINHEIRO VENDIDO (Faturamento) é o Total Contado + o que foi Retirado? 
-  // Ou o Dinheiro Contado já é o faturamento? 
-  // Baseado no seu erro, vamos considerar que o Faturamento em Dinheiro é o Total Contado.
+  // O faturamento em dinheiro é o total contado na mesa
   const faturamentoDinheiro = totalDinheiroContado;
 
-  // TOTAL SISTEMA
   const totalSistema = totalDebito + totalCredito + Number(cartoes.pix_ecommerce) + 
                        Number(cartoes.voucher) + Number(apps.pix_loja) + 
-                       Number(apps.keeta.valor) + Number(apps.ifood.valor) + faturamentoDinheiro;
+                       totalKeeta + totalIfood + faturamentoDinheiro;
 
   const totalRealComBolos = totalSistema + Number(cartoes.bolos);
-  
-  // MOVIMENTAÇÃO FÍSICA (O que sobrou no caixa após a retirada)
   const noCaixaSobrou = totalDinheiroContado - (Number(dinheiro.retirado) || 0);
 
-  // FUNÇÃO RELATÓRIO WHATSAPP
+  // RELATÓRIO WHATSAPP CORRIGIDO
   const gerarRelatorioWhatsApp = () => {
     const data = new Date().toLocaleDateString('pt-BR');
     const msg = `*📋 FECHAMENTO DE CAIXA - ${data}*
@@ -59,11 +73,11 @@ const FechamentoCaixa = ({ onSucesso }) => {
 *📊 CONFERÊNCIA SISTEMA*
 🔹 Débito: ${formatarMoeda(totalDebito)}
 🔹 Crédito: ${formatarMoeda(totalCredito)}
-🔹 Pix E-commerce: ${formatarMoeda(Number(cartoes.pix_ecommerce))}
+🔹 Pix E-com: ${formatarMoeda(Number(cartoes.pix_ecommerce))}
 🔹 VR/Voucher: ${formatarMoeda(Number(cartoes.voucher))}
 🔹 Pix Loja: ${formatarMoeda(Number(apps.pix_loja))}
-🔹 Keeta: ${formatarMoeda(Number(apps.keeta.valor))}
-🔹 iFood: ${formatarMoeda(Number(apps.ifood.valor))}
+🔹 Keeta (${apps.keeta.length} ped): ${formatarMoeda(totalKeeta)}
+🔹 iFood (${apps.ifood.length} ped): ${formatarMoeda(totalIfood)}
 🔹 Dinheiro (Venda): ${formatarMoeda(faturamentoDinheiro)}
 *💰 TOTAL SISTEMA: ${formatarMoeda(totalSistema)}*
 
@@ -73,8 +87,7 @@ const FechamentoCaixa = ({ onSucesso }) => {
 *🚀 TOTAL REAL (SIST + BOLOS): ${formatarMoeda(totalRealComBolos)}*
 
 ---------------------------------------
-*💸 MOVIMENTAÇÃO FÍSICA (GAVETA)*
-Total Contado: ${formatarMoeda(totalDinheiroContado)}
+*💸 GAVETA (FISICO)*
 Sangria/Retirada: ${formatarMoeda(Number(dinheiro.retirado))}
 *✅ SOBROU NO CAIXA: ${formatarMoeda(noCaixaSobrou)}*
 
@@ -82,7 +95,7 @@ Sangria/Retirada: ${formatarMoeda(Number(dinheiro.retirado))}
 _Enviado via Finance PRO_`;
 
     navigator.clipboard.writeText(msg);
-    alert("Relatório copiado para o WhatsApp!");
+    alert("Relatório copiado!");
   };
 
   const salvarNoBanco = async () => {
@@ -94,8 +107,8 @@ _Enviado via Finance PRO_`;
       pix: Number(apps.pix_loja),
       pix_ecommerce: Number(cartoes.pix_ecommerce),
       voucher: Number(cartoes.voucher),
-      ifood: Number(apps.ifood.valor),
-      keeta: Number(apps.keeta.valor),
+      ifood: totalIfood,
+      keeta: totalKeeta,
       bolos: Number(cartoes.bolos)
     };
 
@@ -109,7 +122,6 @@ _Enviado via Finance PRO_`;
 
   return (
     <div className="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden max-w-4xl mx-auto animate-in fade-in zoom-in duration-500">
-      {/* MENU SUPERIOR */}
       <div className="flex bg-slate-900 p-2 gap-1">
         {['dinheiro', 'cartoes', 'apps', 'resumo'].map((tab) => (
           <button key={tab} onClick={() => setAbaAtiva(tab)} className={`flex-1 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${abaAtiva === tab ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}>
@@ -119,36 +131,46 @@ _Enviado via Finance PRO_`;
       </div>
 
       <div className="p-6 md:p-10">
-        {/* ABA DINHEIRO */}
         {abaAtiva === 'dinheiro' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in">
             <section className="space-y-2">
               <h4 className="text-[10px] font-black text-emerald-600 uppercase mb-4 tracking-widest border-b pb-2">🪙 Moedas</h4>
-              {Object.keys(dinheiro.moedas).map(m => (
+              {Object.keys(dinheiro.moedas).map((m, i, arr) => (
                 <div key={m} className="flex justify-between bg-gray-50 p-3 rounded-xl">
                   <span className="text-xs font-bold text-gray-500">R$ {m}</span>
-                  <input type="number" className="w-20 text-right font-bold bg-white border rounded p-1" value={dinheiro.moedas[m]} onChange={(e) => setDinheiro({...dinheiro, moedas: {...dinheiro.moedas, [m]: e.target.value}})} />
+                  <input 
+                    ref={el => inputsRef.current[`m-${m}`] = el}
+                    type="number" className="w-20 text-right font-bold bg-white border rounded p-1" 
+                    value={dinheiro.moedas[m]} 
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `m-${arr[i+1]}` : 'n-2')}
+                    onChange={(e) => setDinheiro({...dinheiro, moedas: {...dinheiro.moedas, [m]: e.target.value}})} 
+                  />
                 </div>
               ))}
             </section>
             <section className="space-y-2">
               <h4 className="text-[10px] font-black text-emerald-600 uppercase mb-4 tracking-widest border-b pb-2">💵 Notas</h4>
-              {Object.keys(dinheiro.notas).map(n => (
+              {Object.keys(dinheiro.notas).map((n, i, arr) => (
                 <div key={n} className="flex justify-between bg-gray-50 p-3 rounded-xl">
                   <span className="text-xs font-bold text-gray-500">R$ {n},00</span>
-                  <input type="number" className="w-20 text-right font-bold bg-white border rounded p-1" value={dinheiro.notas[n]} onChange={(e) => setDinheiro({...dinheiro, notas: {...dinheiro.notas, [n]: e.target.value}})} />
+                  <input 
+                    ref={el => inputsRef.current[`n-${n}`] = el}
+                    type="number" className="w-20 text-right font-bold bg-white border rounded p-1" 
+                    value={dinheiro.notas[n]} 
+                    onKeyDown={(e) => handleKeyDown(e, arr[i+1] ? `n-${arr[i+1]}` : '')}
+                    onChange={(e) => setDinheiro({...dinheiro, notas: {...dinheiro.notas, [n]: e.target.value}})} 
+                  />
                 </div>
               ))}
             </section>
           </div>
         )}
 
-        {/* ABA CARTÕES */}
         {abaAtiva === 'cartoes' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in">
             <section className="space-y-1">
               <h4 className="text-[10px] font-black text-blue-500 uppercase mb-4 border-b pb-2 tracking-widest">🟦 Débito</h4>
-              {Object.keys(cartoes.debito).map(d => (
+              {Object.keys(cartoes.debito).map((d) => (
                 <div key={d} className="flex justify-between bg-gray-50 p-2 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase">{d}</span>
                   <input type="number" className="w-24 text-right font-bold outline-none bg-transparent" value={cartoes.debito[d]} onChange={(e) => setCartoes({...cartoes, debito: {...cartoes.debito, [d]: e.target.value}})} />
@@ -157,7 +179,7 @@ _Enviado via Finance PRO_`;
             </section>
             <section className="space-y-1">
               <h4 className="text-[10px] font-black text-orange-500 uppercase mb-4 border-b pb-2 tracking-widest">🟧 Crédito</h4>
-              {Object.keys(cartoes.credito).map(c => (
+              {Object.keys(cartoes.credito).map((c) => (
                 <div key={c} className="flex justify-between bg-gray-50 p-2 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase">{c}</span>
                   <input type="number" className="w-24 text-right font-bold outline-none bg-transparent" value={cartoes.credito[c]} onChange={(e) => setCartoes({...cartoes, credito: {...cartoes.credito, [c]: e.target.value}})} />
@@ -167,38 +189,44 @@ _Enviado via Finance PRO_`;
           </div>
         )}
 
-        {/* ABA APPS */}
         {abaAtiva === 'apps' && (
-          <div className="space-y-4 animate-in fade-in">
-             <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">🛵 Delivery e Outros</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
-                      <span className="text-xs font-bold text-gray-400 uppercase">Pix Loja</span>
-                      <input type="number" className="w-28 text-right font-black text-emerald-600 outline-none" value={apps.pix_loja} onChange={(e) => setApps({...apps, pix_loja: e.target.value})} />
-                   </div>
-                   <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
-                      <span className="text-xs font-bold text-gray-400 uppercase">Pix E-com</span>
-                      <input type="number" className="w-28 text-right font-black text-teal-600 outline-none" value={cartoes.pix_ecommerce} onChange={(e) => setCartoes({...cartoes, pix_ecommerce: e.target.value})} />
-                   </div>
-                   <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
-                      <span className="text-xs font-bold text-gray-400 uppercase">VR / Voucher</span>
-                      <input type="number" className="w-28 text-right font-black text-pink-600 outline-none" value={cartoes.voucher} onChange={(e) => setCartoes({...cartoes, voucher: e.target.value})} />
-                   </div>
-                   <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
-                      <span className="text-xs font-bold text-gray-400 uppercase">iFood</span>
-                      <input type="number" className="w-28 text-right font-black text-red-600 outline-none" value={apps.ifood.valor} onChange={(e) => setApps({...apps, ifood: {...apps.ifood, valor: e.target.value}})} />
-                   </div>
-                   <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
-                      <span className="text-xs font-bold text-gray-400 uppercase">Keeta</span>
-                      <input type="number" className="w-28 text-right font-black text-orange-600 outline-none" value={apps.keeta.valor} onChange={(e) => setApps({...apps, keeta: {...apps.keeta, valor: e.target.value}})} />
-                   </div>
+          <div className="space-y-6 animate-in fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100">
+                <h4 className="text-[10px] font-black text-red-600 uppercase mb-4 tracking-widest">🛵 iFood ({formatarMoeda(totalIfood)})</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-2 mb-4">
+                  {apps.ifood.map((v, i) => (
+                    <input 
+                      key={`ifood-${i}`} ref={el => inputsRef.current[`ifood-${i}`] = el}
+                      type="number" className="w-full p-3 rounded-xl border-none shadow-sm font-bold text-red-700 outline-none" 
+                      value={v} placeholder={`Pedido ${i+1}`}
+                      onChange={(e) => { const l = [...apps.ifood]; l[i] = e.target.value; setApps({...apps, ifood: l}) }}
+                      onKeyDown={(e) => handleKeyDown(e, `ifood-${i+1}`)}
+                    />
+                  ))}
                 </div>
-             </div>
+                <button onClick={() => adicionarPedido('ifood')} className="w-full py-2 bg-red-100 text-red-600 rounded-xl font-black text-[10px] uppercase">+ Pedido</button>
+              </div>
+
+              <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100">
+                <h4 className="text-[10px] font-black text-orange-600 uppercase mb-4 tracking-widest">🥡 Keeta ({formatarMoeda(totalKeeta)})</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-2 mb-4">
+                  {apps.keeta.map((v, i) => (
+                    <input 
+                      key={`keeta-${i}`} ref={el => inputsRef.current[`keeta-${i}`] = el}
+                      type="number" className="w-full p-3 rounded-xl border-none shadow-sm font-bold text-orange-700 outline-none" 
+                      value={v} placeholder={`Pedido ${i+1}`}
+                      onChange={(e) => { const l = [...apps.keeta]; l[i] = e.target.value; setApps({...apps, keeta: l}) }}
+                      onKeyDown={(e) => handleKeyDown(e, `keeta-${i+1}`)}
+                    />
+                  ))}
+                </div>
+                <button onClick={() => adicionarPedido('keeta')} className="w-full py-2 bg-orange-100 text-orange-600 rounded-xl font-black text-[10px] uppercase">+ Pedido</button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ABA RESUMO */}
         {abaAtiva === 'resumo' && (
           <div className="space-y-6 animate-in zoom-in">
             <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl">
@@ -209,8 +237,8 @@ _Enviado via Finance PRO_`;
                 <div><p className="text-[8px] uppercase text-slate-500 font-bold">Pix E-com</p><p className="font-bold">{formatarMoeda(Number(cartoes.pix_ecommerce))}</p></div>
                 <div><p className="text-[8px] uppercase text-slate-500 font-bold">VR</p><p className="font-bold">{formatarMoeda(Number(cartoes.voucher))}</p></div>
                 <div><p className="text-[8px] uppercase text-slate-500 font-bold">Pix Loja</p><p className="font-bold">{formatarMoeda(Number(apps.pix_loja))}</p></div>
-                <div><p className="text-[8px] uppercase text-slate-500 font-bold">Keeta</p><p className="font-bold">{formatarMoeda(Number(apps.keeta.valor))}</p></div>
-                <div><p className="text-[8px] uppercase text-slate-500 font-bold">iFood</p><p className="font-bold">{formatarMoeda(Number(apps.ifood.valor))}</p></div>
+                <div><p className="text-[8px] uppercase text-slate-500 font-bold">Keeta</p><p className="font-bold">{formatarMoeda(totalKeeta)}</p></div>
+                <div><p className="text-[8px] uppercase text-slate-500 font-bold">iFood</p><p className="font-bold">{formatarMoeda(totalIfood)}</p></div>
                 <div><p className="text-[8px] uppercase text-slate-500 font-bold">Dinheiro (Venda)</p><p className="font-bold text-emerald-400">{formatarMoeda(faturamentoDinheiro)}</p></div>
               </div>
 
@@ -232,11 +260,11 @@ _Enviado via Finance PRO_`;
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-               <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 flex justify-between items-center shadow-sm">
+               <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 flex justify-between items-center">
                   <span className="text-[10px] font-black text-orange-600 uppercase">Sangria/Retirada:</span>
                   <input type="number" className="bg-transparent text-right font-black text-orange-700 outline-none w-20" value={dinheiro.retirado} onChange={(e) => setDinheiro({...dinheiro, retirado: e.target.value})} />
                </div>
-               <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center shadow-sm">
+               <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center">
                   <span className="text-[10px] font-black text-emerald-600 uppercase">No Caixa Sobrou:</span>
                   <span className="font-black text-emerald-700">{formatarMoeda(noCaixaSobrou)}</span>
                </div>
@@ -244,7 +272,7 @@ _Enviado via Finance PRO_`;
 
             <div className="flex flex-col gap-3">
                <button onClick={salvarNoBanco} className="w-full bg-emerald-600 text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl transition-all active:scale-95">💾 Salvar no Sistema</button>
-               <button onClick={gerarRelatorioWhatsApp} className="w-full bg-[#25D366] text-white py-4 rounded-3xl font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">📱 Copiar para WhatsApp</button>
+               <button onClick={gerarRelatorioWhatsApp} className="w-full bg-[#25D366] text-white py-4 rounded-3xl font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">📱 Copiar p/ WhatsApp</button>
             </div>
           </div>
         )}
