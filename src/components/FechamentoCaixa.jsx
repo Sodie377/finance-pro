@@ -106,9 +106,12 @@ _Enviado via Finance PRO_`;
   };
 
   const salvarNoBanco = async () => {
+    // AJUSTE REALIZADO AQUI: Subtraímos o que sobrou no caixa do dinheiro total contado
+    const dinheiroLiquido = faturamentoDinheiro - noCaixaSobrou;
+
     const dados = {
       data_referencia: new Date().toISOString().split('T')[0],
-      dinheiro: faturamentoDinheiro,
+      dinheiro: dinheiroLiquido, // Agora salva apenas o que saiu do caixa (Líquido)
       debito: totalDebito,
       credito: totalCredito,
       pix: Number(apps.pix_loja),
