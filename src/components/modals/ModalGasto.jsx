@@ -12,7 +12,7 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
 
   useEffect(() => {
     if (isOpen) {
-      setTipo(tipoPadrao);
+      setTipo(tipoPadrao || 'Loja');
       setDataGasto(new Date().toISOString().split('T')[0]);
       buscarFornecedores();
       buscarCategorias();
@@ -46,7 +46,6 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
     });
     
     limparCampos();
-    onClose();
   };
 
   const limparCampos = () => {
@@ -59,82 +58,101 @@ const ModalGasto = ({ isOpen, onClose, onSalvar, tipoPadrao }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="space-y-5">
-      {/* 1. SELETOR DE TIPO (Fica no topo do formulário) */}
-      <div className="flex bg-gray-100 p-1 rounded-2xl">
-        <button 
-          onClick={() => setTipo('Loja')} 
-          className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${tipo === 'Loja' ? 'bg-white shadow-sm text-red-600' : 'text-gray-400'}`}
-        >
-          LOJA
-        </button>
-        <button 
-          onClick={() => setTipo('Pessoal')} 
-          className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${tipo === 'Pessoal' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-400'}`}
-        >
-          PESSOAL
-        </button>
-      </div>
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+      {/* Fundo Escuro */}
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
 
-      {/* 2. CAMPO DE DATA (Agora visível e centralizado) */}
-      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-        <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Data do Pagamento</label>
-        <input 
-          type="date"
-          className="w-full bg-transparent outline-none font-bold text-slate-700"
-          value={dataGasto}
-          onChange={(e) => setDataGasto(e.target.value)}
-        />
-      </div>
-
-      {/* 3. FAVORECIDO */}
-      <div>
-        <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Favorecido (Quem recebe?)</label>
-        <input 
-          list="lista-fornecedores"
-          className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-slate-800 font-bold"
-          placeholder="Ex: Oxxo, Caixa, Aluguel..."
-          value={favorecido}
-          onChange={(e) => setFavorecido(e.target.value)}
-        />
-        <datalist id="lista-fornecedores">
-          {fornecedores.map((f, i) => <option key={i} value={f} />)}
-        </datalist>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Valor (R$)</label>
-          <input 
-            type="number"
-            step="0.01"
-            className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-slate-800 font-mono font-bold"
-            placeholder="0,00"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-          />
+      {/* Container do Modal */}
+      <div className="relative bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+        
+        {/* Cabeçalho */}
+        <div className="bg-slate-900 p-6 flex justify-between items-center">
+          <h2 className="text-white font-black uppercase tracking-tighter text-xl">Novo Gasto</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <div>
-          <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Categoria</label>
-          <select 
-            className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-slate-800 font-bold"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
+
+        <div className="p-8 space-y-5">
+          {/* 1. SELETOR DE TIPO */}
+          <div className="flex bg-gray-100 p-1 rounded-2xl">
+            <button 
+              onClick={() => setTipo('Loja')} 
+              className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${tipo === 'Loja' ? 'bg-white shadow-sm text-red-600' : 'text-gray-400'}`}
+            >
+              LOJA
+            </button>
+            <button 
+              onClick={() => setTipo('Pessoal')} 
+              className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${tipo === 'Pessoal' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-400'}`}
+            >
+              PESSOAL
+            </button>
+          </div>
+
+          {/* 2. CAMPO DE DATA */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Data do Pagamento</label>
+            <input 
+              type="date"
+              className="w-full bg-transparent outline-none font-bold text-slate-700"
+              value={dataGasto}
+              onChange={(e) => setDataGasto(e.target.value)}
+            />
+          </div>
+
+          {/* 3. FAVORECIDO */}
+          <div>
+            <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Favorecido (Quem recebe?)</label>
+            <input 
+              list="lista-fornecedores"
+              className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-slate-800 font-bold"
+              placeholder="Ex: Oxxo, Caixa, Aluguel..."
+              value={favorecido}
+              onChange={(e) => setFavorecido(e.target.value)}
+            />
+            <datalist id="lista-fornecedores">
+              {fornecedores.map((f, i) => <option key={i} value={f} />)}
+            </datalist>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Valor (R$)</label>
+              <input 
+                type="number"
+                step="0.01"
+                className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-slate-800 font-mono font-bold"
+                placeholder="0,00"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Categoria</label>
+              <select 
+                className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-slate-800 font-bold"
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+              >
+                <option value="">Outros</option>
+                {categoriasBD.map((cat, i) => (
+                  <option key={i} value={cat.nome}>{cat.nome}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <button 
+            onClick={handleSalvar}
+            className={`w-full py-5 rounded-2xl text-white font-black shadow-lg transition-all transform active:scale-95 uppercase tracking-widest text-xs ${tipo === 'Loja' ? 'bg-red-500 shadow-red-100 hover:bg-red-600' : 'bg-purple-600 shadow-purple-100 hover:bg-purple-700'}`}
           >
-            <option value="">Outros</option>
-            {categoriasBD.map((cat, i) => (
-              <option key={i} value={cat.nome}>{cat.nome}</option>
-            ))}
-          </select>
+            Confirmar Lançamento
+          </button>
         </div>
       </div>
-
-      <button 
-        onClick={handleSalvar}
-        className={`w-full py-5 rounded-2xl text-white font-black shadow-lg transition-all transform active:scale-95 uppercase tracking-widest text-xs ${tipo === 'Loja' ? 'bg-red-500 shadow-red-100 hover:bg-red-600' : 'bg-purple-600 shadow-purple-100 hover:bg-purple-700'}`}
-      >
-        Confirmar Lançamento
-      </button>
     </div>
   );
 };
