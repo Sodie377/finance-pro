@@ -102,7 +102,20 @@ function App() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
   };
 
-  const totalBruto = vendas.reduce((acc, v) => acc + (v.valor_bruto || 0), 0)
+  // --- ALTERAÇÃO ESSENCIAL: SOMA REAL POR REGISTRO DAS VENDAS ---
+  const totalBruto = vendas.reduce((acc, dia) => {
+    const dinheiro = Number(dia.dinheiro) || 0;
+    const debito = Number(dia.debito) || 0;
+    const credito = Number(dia.credito) || 0;
+    const pix = Number(dia.pix) || 0;
+    const pix_ecommerce = Number(dia.pix_ecommerce) || 0;
+    const voucher = Number(dia.voucher) || 0;
+    const ifood = Number(dia.ifood) || 0;
+    const keeta = Number(dia.keeta) || 0;
+    const bolos = Number(dia.bolos) || 0;
+    return acc + dinheiro + debito + credito + pix + pix_ecommerce + voucher + ifood + keeta + bolos;
+  }, 0);
+
   const totalLiquido = calcularTotalLiquido();
   const totalLoja = gastos.filter(g => g.tipo === 'Loja').reduce((acc, g) => acc + (g.valor || 0), 0)
   const totalPessoal = gastos.filter(g => g.tipo === 'Pessoal').reduce((acc, g) => acc + (g.valor || 0), 0)
@@ -131,7 +144,6 @@ function App() {
         {activeTab === 'taxas' && <Configuracoes />}
         {activeTab === 'fornecedores' && <CadastroFornecedores />}
         
-        {/* NOVA LINHA ADICIONADA AQUI ABAIXO */}
         {activeTab === 'compras' && <ListaCompras />}
 
         {activeTab === 'relatorios' && (
@@ -171,7 +183,7 @@ function App() {
                 }`}>
                   <div>
                     <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
-                      Total Acumulado ({filtro})
+                      Total Acumulado ({filtro === 'personalizado' ? 'Período' : filtro})
                     </p>
                     <p className={`text-5xl font-black font-mono tracking-tighter ${
                       activeTab === 'vendas' ? 'text-emerald-600' : 
