@@ -116,11 +116,14 @@ function App() {
     return acc + dinheiro + debito + credito + pix + pix_ecommerce + voucher + ifood + keeta + bolos;
   }, 0);
 
-  const totalLiquido = calcularTotalLiquido();
   const totalLoja = gastos.filter(g => g.tipo === 'Loja').reduce((acc, g) => acc + (g.valor || 0), 0)
   const totalPessoal = gastos.filter(g => g.tipo === 'Pessoal').reduce((acc, g) => acc + (g.valor || 0), 0)
+  
+  // --- MUDANÇA REQUISITADA: Descontando gastos de Casa (Pessoal) do Líquido Geral ---
+  const totalLiquido = calcularTotalLiquido() - totalPessoal; 
+  
   const lucroReal = totalLiquido - totalLoja
-  const saldoFinal = totalLiquido - totalLoja - totalPessoal
+  const saldoFinal = totalLiquido - totalLoja
 
   return (
     <div className="flex bg-gray-50 min-h-screen w-full font-sans text-gray-900">
@@ -144,6 +147,7 @@ function App() {
         {activeTab === 'taxas' && <Configuracoes />}
         {activeTab === 'fornecedores' && <CadastroFornecedores />}
         
+        {/* NOVA LINHA ADICIONADA AQUI ABAIXO */}
         {activeTab === 'compras' && <ListaCompras />}
 
         {activeTab === 'relatorios' && (
